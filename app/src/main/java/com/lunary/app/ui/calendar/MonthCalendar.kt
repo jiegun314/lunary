@@ -3,7 +3,6 @@ package com.lunary.app.ui.calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,9 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.requiredHeight
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +28,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.lunary.app.ui.LunarDate
-import com.lunary.app.ui.components.LetterAccent
 import androidx.compose.ui.unit.sp
 import com.lunary.app.ui.weekdayShort
 import java.time.DayOfWeek
@@ -166,59 +162,31 @@ private fun DayCell(
                         } else Modifier
                     )
             )
-            Column(
+            DateMarkers(
                 modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally
+                selected = selected,
+                muted = !inMonth,
+                hasLetter = hasLetter,
+                eventColors = eventColors,
+                maxDots = 7
             ) {
-                Text(
-                    text = date.dayOfMonth.toString(),
-                    color = contentColor,
-                    fontSize = (16f * textScale / fontScale).sp,
-                    lineHeight = (18f * textScale / fontScale).sp,
-                    fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal
-                )
-                if (lunarText.isNotEmpty()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = lunarText,
-                        color = contentColor.copy(alpha = 0.78f),
-                        fontSize = ((if (cellWidth < 44.dp) 7f else 9f) * textScale / fontScale).sp,
-                        lineHeight = ((if (cellWidth < 44.dp) 8f else 10f) * textScale / fontScale).sp,
-                        maxLines = 1
+                        text = date.dayOfMonth.toString(),
+                        color = contentColor,
+                        fontSize = (16f * textScale / fontScale).sp,
+                        lineHeight = (18f * textScale / fontScale).sp,
+                        fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal
                     )
-                }
-                if (hasLetter) {
-                    Box(
-                        modifier = Modifier
-                            .width(12.dp)
-                            .height(2.dp)
-                            .clip(RoundedCornerShape(1.dp))
-                            .background(
-                                when {
-                                    selected -> MaterialTheme.colorScheme.onPrimary
-                                    !inMonth -> LetterAccent.copy(alpha = 0.45f)
-                                    else -> LetterAccent
-                                }
-                            )
-                    )
-                }
-            }
-        }
-        if (eventColors.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 0.5.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                val dotSize = if (eventColors.size > 5) 4.dp else 5.dp
-                eventColors.take(7).forEach { argb ->
-                    val dotColor = if (argb != 0) Color(argb) else MaterialTheme.colorScheme.primary
-                    Box(
-                        modifier = Modifier
-                            .size(dotSize)
-                            .clip(CircleShape)
-                            .background(dotColor)
-                    )
+                    if (lunarText.isNotEmpty()) {
+                        Text(
+                            text = lunarText,
+                            color = contentColor.copy(alpha = 0.78f),
+                            fontSize = ((if (cellWidth < 44.dp) 7f else 9f) * textScale / fontScale).sp,
+                            lineHeight = ((if (cellWidth < 44.dp) 8f else 10f) * textScale / fontScale).sp,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }

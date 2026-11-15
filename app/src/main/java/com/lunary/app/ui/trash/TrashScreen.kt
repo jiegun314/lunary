@@ -291,7 +291,7 @@ private fun LetterTrashCard(
                     Icon(
                         Icons.Default.Email,
                         contentDescription = null,
-                        tint = LetterAccent,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(

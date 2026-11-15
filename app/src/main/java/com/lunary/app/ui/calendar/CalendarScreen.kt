@@ -15,11 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -61,14 +59,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunary.app.R
 import com.lunary.app.domain.date.DayMath
 import com.lunary.app.ui.components.LunaryTopAppBar
 import com.lunary.app.ui.components.EventRow
-import com.lunary.app.ui.components.LetterAccent
 import com.lunary.app.ui.components.LetterRow
 import com.lunary.app.ui.formatMonthDay
 import com.lunary.app.ui.formatSelectedDate
@@ -556,6 +555,8 @@ private fun WeekView(
     state: CalendarUiState,
     onSelect: (LocalDate) -> Unit
 ) {
+    val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val textScale = fontScale.coerceAtMost(1.3f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -600,62 +601,31 @@ private fun WeekView(
                 Text(
                     text = weekdayShort(date.dayOfWeek),
                     style = MaterialTheme.typography.labelSmall,
+                    fontSize = (11f * textScale / fontScale).sp,
+                    lineHeight = (16f * textScale / fontScale).sp,
                     color = if (selected) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = date.dayOfMonth.toString(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (selected) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurface
-                )
-                if (hasLetter) {
-                    LetterUnderline(selected = selected)
-                }
-                if (count > 0) {
-                    Row(
-                        modifier = Modifier.padding(top = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        repeat(minOf(colors.size, 4)) { index ->
-                            val argb = colors[index]
-                            BoxDot(
-                                color = if (argb != 0) androidx.compose.ui.graphics.Color(argb)
-                                else MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                } else {
-                    Spacer(Modifier.height(4.dp))
+                DateMarkers(
+                    selected = selected,
+                    muted = false,
+                    hasLetter = hasLetter,
+                    eventColors = colors,
+                    maxDots = 4
+                ) {
+                    Text(
+                        text = date.dayOfMonth.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = (16f * textScale / fontScale).sp,
+                        lineHeight = (24f * textScale / fontScale).sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (selected) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }
     }
-}
-
-@Composable
-private fun LetterUnderline(selected: Boolean) {
-    Box(
-        modifier = Modifier
-            .padding(top = 1.dp)
-            .width(12.dp)
-            .height(2.dp)
-            .clip(RoundedCornerShape(1.dp))
-            .background(
-                if (selected) MaterialTheme.colorScheme.onPrimary else LetterAccent
-            )
-    )
-}
-
-@Composable
-private fun BoxDot(color: androidx.compose.ui.graphics.Color) {
-    androidx.compose.foundation.layout.Box(
-        modifier = Modifier
-            .size(3.dp)
-            .clip(CircleShape)
-            .background(color)
-    )
 }
 
 @Composable

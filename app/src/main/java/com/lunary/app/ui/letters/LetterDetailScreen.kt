@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunary.app.R
-import com.lunary.app.ui.components.LetterAccent
 import com.lunary.app.ui.formatDate
 import com.lunary.app.ui.formatTime
 import com.lunary.app.ui.weekdayLong
@@ -104,7 +103,7 @@ fun LetterDetailScreen(
                                 Icon(
                                     Icons.Default.Email,
                                     contentDescription = null,
-                                    tint = LetterAccent,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Text(
