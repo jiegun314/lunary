@@ -1,0 +1,26 @@
+# Android / Gradle
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+out/
+.DS_Store
+
+# Secrets and signing material
+keystore.properties
+*.jks
+*.keystore
+*.p12
+.env
+google-services.json
+
+# Release binaries are local artifacts; curated screenshots stay tracked
+release/*.apk
+release/*.aab
+release/*.ap_
