@@ -12,6 +12,7 @@ import com.lunary.app.data.reminder.ReminderReceiver
 import com.lunary.app.data.attachment.AttachmentStore
 import com.lunary.app.data.reminder.ReminderScheduler
 import com.lunary.app.domain.repository.EventRepository
+import com.lunary.app.domain.repository.LetterRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +25,9 @@ class LunaryApplication : Application() {
 
     @Inject
     lateinit var eventRepository: EventRepository
+
+    @Inject
+    lateinit var letterRepository: LetterRepository
 
     @Inject
     lateinit var reminderScheduler: ReminderScheduler
@@ -53,6 +57,7 @@ class LunaryApplication : Application() {
         applicationScope.launch {
             // Housekeeping: recycle-bin entries live for 30 days.
             eventRepository.purgeExpiredTrash()
+            letterRepository.purgeExpiredTrash()
             reminderScheduler.rescheduleAll()
             autoBackupScheduler.scheduleNext()
         }

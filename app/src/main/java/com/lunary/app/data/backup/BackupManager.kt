@@ -9,6 +9,7 @@ import com.lunary.app.data.local.dao.AttachmentDao
 import com.lunary.app.data.local.dao.CategoryDao
 import com.lunary.app.data.local.dao.EventDao
 import com.lunary.app.data.local.dao.EventTagDao
+import com.lunary.app.data.local.dao.LetterDao
 import com.lunary.app.data.local.dao.ReminderDao
 import com.lunary.app.data.local.dao.TagDao
 import com.lunary.app.data.local.entity.EventTagCrossRef
@@ -44,6 +45,7 @@ class BackupManager @Inject constructor(
     private val eventTagDao: EventTagDao,
     private val reminderDao: ReminderDao,
     private val attachmentDao: AttachmentDao,
+    private val letterDao: LetterDao,
     private val reminderScheduler: ReminderScheduler,
     private val settingsRepository: SettingsRepository,
     private val clock: Clock
@@ -115,6 +117,7 @@ class BackupManager @Inject constructor(
             require(data.categories.size == manifest.categoryCount) { "分类数量不一致" }
             require(data.tags.size == manifest.tagCount) { "标签数量不一致" }
             require(data.reminders.size == manifest.reminderCount) { "提醒数量不一致" }
+            require(data.letters.size == manifest.letterCount) { "芳札数量不一致" }
             var total = 0L
             manifest.files.forEach { file ->
                 require(!file.path.contains("..")) { "备份包含非法路径" }
@@ -175,7 +178,8 @@ class BackupManager @Inject constructor(
             tags = tagDao.getAllForBackup(),
             eventTags = eventTagDao.getAllForBackup(),
             reminders = reminderDao.getAllForBackup(),
-            attachments = attachmentDao.getAllForBackup()
+            attachments = attachmentDao.getAllForBackup(),
+            letters = letterDao.getAllForBackup()
         )
         val dataBytes = BackupJson.encodeSnapshot(data)
         val attachmentRoot = File(context.filesDir, "attachments")
@@ -200,6 +204,7 @@ class BackupManager @Inject constructor(
             categoryCount = data.categories.size,
             tagCount = data.tags.size,
             reminderCount = data.reminders.size,
+            letterCount = data.letters.size,
             attachmentCount = fileMap.size,
             attachmentBytes = attachmentBytes,
             dataSha256 = sha256(dataBytes),
@@ -268,6 +273,7 @@ class BackupManager @Inject constructor(
             var refs = archive.data.eventTags
             var reminders = archive.data.reminders
             var attachments = archive.data.attachments
+            var letters = archive.data.letters
             val filesToWrite = mutableMapOf<String, String>()
 
             if (mode == RestoreMode.MERGE) {
@@ -327,6 +333,13 @@ class BackupManager @Inject constructor(
                         updatedAt = clock.millis()
                     )
                 }
+                letters = letters.map { letter ->
+                    letter.copy(
+                        id = UUID.randomUUID().toString(),
+                        subject = letter.subject + "（恢复副本）",
+                        updatedAt = clock.millis()
+                    )
+                }
                 attachments = attachments.map { attachment ->
                     val newEventId = eventMap[attachment.eventId] ?: attachment.eventId
                     val oldRelative = attachment.relativePath?.removePrefix("attachments/")
@@ -362,6 +375,7 @@ class BackupManager @Inject constructor(
                     eventTagDao.deleteAll()
                     reminderDao.deleteAll()
                     attachmentDao.deleteAll()
+                    letterDao.deleteAll()
                     eventDao.deleteAll()
                     categoryDao.deleteAll()
                     tagDao.deleteAll()
@@ -372,6 +386,7 @@ class BackupManager @Inject constructor(
                 if (refs.isNotEmpty()) eventTagDao.insertAll(refs)
                 reminders.forEach { reminderDao.upsert(it) }
                 attachments.forEach { attachmentDao.upsert(it) }
+                letters.forEach { letterDao.upsert(it) }
             }
 
             val attachmentsDir = File(context.filesDir, "attachments")
@@ -392,7 +407,8 @@ class BackupManager @Inject constructor(
                 tags = tags.size,
                 reminders = reminders.size,
                 attachments = attachments.size,
-                autoBackupName = autoName
+                autoBackupName = autoName,
+                letters = letters.size
             )
         } finally {
             staging.deleteRecursively()

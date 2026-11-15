@@ -8,8 +8,10 @@ import com.lunary.app.domain.date.DayMath
 import com.lunary.app.domain.model.Category
 import com.lunary.app.domain.model.Event
 import com.lunary.app.domain.model.LeapDayPolicy
+import com.lunary.app.domain.model.Letter
 import com.lunary.app.domain.repository.CategoryRepository
 import com.lunary.app.domain.repository.EventRepository
+import com.lunary.app.domain.repository.LetterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.DayOfWeek
@@ -29,6 +31,8 @@ data class CalendarUiState(
     val selectedDate: LocalDate,
     val allEvents: List<Event>,
     val selectedEvents: List<Event>,
+    val allLetters: List<Letter> = emptyList(),
+    val selectedLetters: List<Letter> = emptyList(),
     val categories: List<Category> = emptyList(),
     val firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     val leapDayPolicy: LeapDayPolicy = LeapDayPolicy.FEBRUARY_28,
@@ -46,6 +50,7 @@ data class CalendarUiState(
 class CalendarViewModel @Inject constructor(
     eventRepository: EventRepository,
     categoryRepository: CategoryRepository,
+    letterRepository: LetterRepository,
     settingsRepository: SettingsRepository,
     private val clock: Clock,
     private val savedStateHandle: SavedStateHandle
@@ -78,6 +83,13 @@ class CalendarViewModel @Inject constructor(
             firstDayOfWeek = settings.firstDayOfWeek(),
             leapDayPolicy = settings.leapDayPolicy,
             viewMode = mode
+        )
+    }.combine(letterRepository.observeLetters()) { calendar, letters ->
+        calendar.copy(
+            allLetters = letters,
+            selectedLetters = letters
+                .filter { it.date == calendar.selectedDate }
+                .sortedBy { it.timeMinutes }
         )
     }.stateIn(
         scope = viewModelScope,

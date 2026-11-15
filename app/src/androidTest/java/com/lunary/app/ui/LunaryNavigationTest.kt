@@ -1,7 +1,9 @@
 package com.lunary.app.ui
 
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -27,10 +29,19 @@ class LunaryNavigationTest {
 
     @Test
     fun editor_requiresTitleBeforeSave() {
-        compose.onNodeWithContentDescription("添加纪念日").performClick()
+        compose.onNodeWithContentDescription("添加").performClick()
+        compose.onNodeWithText("添加纪念日").performClick()
         compose.onNodeWithText("新建纪念日").assertExists()
         compose.onNodeWithContentDescription("保存").assertIsNotEnabled()
         compose.onAllNodes(hasSetTextAction())[0].performTextInput("UI test event")
         compose.onNodeWithContentDescription("保存").assertIsEnabled()
+    }
+
+    @Test
+    fun lettersTab_opensLetterEditor() {
+        compose.onNode(hasText("芳札") and hasClickAction()).performClick()
+        compose.onNodeWithContentDescription("写芳札").assertExists()
+        compose.onNodeWithContentDescription("写芳札").performClick()
+        compose.onNodeWithText("新建芳札").assertExists()
     }
 }

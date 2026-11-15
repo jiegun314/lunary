@@ -7,6 +7,7 @@ import com.lunary.app.data.local.entity.AttachmentEntity
 import com.lunary.app.data.local.entity.CategoryEntity
 import com.lunary.app.data.local.entity.EventEntity
 import com.lunary.app.data.local.entity.EventTagCrossRef
+import com.lunary.app.data.local.entity.LetterEntity
 import com.lunary.app.data.local.entity.ReminderEntity
 import com.lunary.app.data.local.entity.TagEntity
 import kotlinx.coroutines.flow.first
@@ -76,6 +77,32 @@ class LunaryDatabaseTest {
     }
 
     @Test
+    fun letterSoftDeleteRestoreAndBackup() = runBlocking {
+        db.letterDao().upsert(
+            LetterEntity(
+                id = LETTER_ID,
+                dateEpochDay = 20_000L,
+                timeMinutes = 9 * 60 + 30,
+                sender = "A",
+                recipient = "B",
+                subject = "Hello",
+                content = "Long time no see.",
+                createdAt = 1L,
+                updatedAt = 1L
+            )
+        )
+        assertEquals(1, db.letterDao().observeActive().first().size)
+
+        db.letterDao().markDeleted(LETTER_ID, deletedAt = 10L, updatedAt = 10L)
+        assertTrue(db.letterDao().observeActive().first().isEmpty())
+        assertEquals(1, db.letterDao().observeDeletedLetters().first().size)
+
+        db.letterDao().restore(LETTER_ID, updatedAt = 11L)
+        assertEquals(1, db.letterDao().observeActive().first().size)
+        assertEquals(1, db.letterDao().getAllForBackup().size)
+    }
+
+    @Test
     fun clearingCategoryLeavesEventUncategorised() = runBlocking {
         seedEventWithTag()
         db.eventDao().clearCategory(CATEGORY_ID, updatedAt = 20L)
@@ -107,5 +134,6 @@ class LunaryDatabaseTest {
         const val EVENT_ID = "event-1"
         const val CATEGORY_ID = "category-1"
         const val TAG_ID = "tag-1"
+        const val LETTER_ID = "letter-1"
     }
 }

@@ -9,12 +9,14 @@ import com.lunary.app.data.local.dao.AttachmentDao
 import com.lunary.app.data.local.dao.CategoryDao
 import com.lunary.app.data.local.dao.EventDao
 import com.lunary.app.data.local.dao.EventTagDao
+import com.lunary.app.data.local.dao.LetterDao
 import com.lunary.app.data.local.dao.ReminderDao
 import com.lunary.app.data.local.dao.TagDao
 import com.lunary.app.data.local.entity.AttachmentEntity
 import com.lunary.app.data.local.entity.CategoryEntity
 import com.lunary.app.data.local.entity.EventEntity
 import com.lunary.app.data.local.entity.EventTagCrossRef
+import com.lunary.app.data.local.entity.LetterEntity
 import com.lunary.app.data.local.entity.ReminderEntity
 import com.lunary.app.data.local.entity.SyncOperationEntity
 import com.lunary.app.data.local.entity.TagEntity
@@ -28,9 +30,10 @@ import com.lunary.app.domain.model.EmojiCatalog
         EventTagCrossRef::class,
         ReminderEntity::class,
         AttachmentEntity::class,
-        SyncOperationEntity::class
+        SyncOperationEntity::class,
+        LetterEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class LunaryDatabase : RoomDatabase() {
@@ -41,6 +44,7 @@ abstract class LunaryDatabase : RoomDatabase() {
     abstract fun eventTagDao(): EventTagDao
     abstract fun reminderDao(): ReminderDao
     abstract fun attachmentDao(): AttachmentDao
+    abstract fun letterDao(): LetterDao
 
     companion object {
         const val NAME = "lunary.db"
@@ -49,6 +53,29 @@ abstract class LunaryDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE events ADD COLUMN latitude REAL")
                 db.execSQL("ALTER TABLE events ADD COLUMN longitude REAL")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `letters` (" +
+                        "`id` TEXT NOT NULL, " +
+                        "`dateEpochDay` INTEGER NOT NULL, " +
+                        "`timeMinutes` INTEGER NOT NULL, " +
+                        "`sender` TEXT NOT NULL, " +
+                        "`recipient` TEXT NOT NULL, " +
+                        "`subject` TEXT NOT NULL, " +
+                        "`content` TEXT NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL, " +
+                        "`updatedAt` INTEGER NOT NULL, " +
+                        "`deletedAt` INTEGER, " +
+                        "`revision` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`id`))"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_letters_dateEpochDay` ON `letters` (`dateEpochDay`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_letters_deletedAt` ON `letters` (`deletedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_letters_updatedAt` ON `letters` (`updatedAt`)")
             }
         }
 

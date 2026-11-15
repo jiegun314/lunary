@@ -2,6 +2,7 @@ package com.lunary.app.domain.model
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 
 data class Category(
     val id: String,
@@ -43,6 +44,21 @@ data class Event(
     val deletedAt: Instant? = null
 ) {
     val tagIds: Set<String> get() = tags.mapTo(mutableSetOf()) { it.id }
+}
+
+data class Letter(
+    val id: String,
+    val date: LocalDate,
+    val timeMinutes: Int,
+    val sender: String,
+    val recipient: String,
+    val subject: String,
+    val content: String,
+    val createdAt: Instant = Instant.EPOCH,
+    val updatedAt: Instant = Instant.EPOCH,
+    val deletedAt: Instant? = null
+) {
+    val time: LocalTime get() = LocalTime.of(timeMinutes / 60, timeMinutes % 60)
 }
 
 data class PickedLocation(

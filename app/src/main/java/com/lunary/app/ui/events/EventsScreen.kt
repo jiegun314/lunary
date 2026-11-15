@@ -38,7 +38,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunary.app.R
 import com.lunary.app.ui.components.EventRow
+import com.lunary.app.ui.components.LunaryTopAppBar
 import com.lunary.app.ui.detail.DetailScreen
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -77,8 +77,8 @@ fun EventsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.events_title)) },
+            LunaryTopAppBar(
+                title = stringResource(R.string.events_title),
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(

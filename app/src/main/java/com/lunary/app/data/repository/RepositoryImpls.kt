@@ -6,14 +6,17 @@ import com.lunary.app.data.attachment.AttachmentStore
 import com.lunary.app.data.local.dao.CategoryDao
 import com.lunary.app.data.local.dao.EventDao
 import com.lunary.app.data.local.dao.EventTagDao
+import com.lunary.app.data.local.dao.LetterDao
 import com.lunary.app.data.local.dao.TagDao
 import com.lunary.app.data.reminder.ReminderScheduler
 import com.lunary.app.data.local.entity.EventTagCrossRef
 import com.lunary.app.domain.model.Category
 import com.lunary.app.domain.model.Event
+import com.lunary.app.domain.model.Letter
 import com.lunary.app.domain.model.Tag
 import com.lunary.app.domain.repository.CategoryRepository
 import com.lunary.app.domain.repository.EventRepository
+import com.lunary.app.domain.repository.LetterRepository
 import com.lunary.app.domain.repository.TagRepository
 import com.lunary.app.domain.text.TextLimits
 import java.time.Clock
@@ -199,5 +202,74 @@ class TagRepositoryImpl @Inject constructor(
 
     companion object {
         const val MAX_NAME_GRAPHEMES = 20
+    }
+}
+
+@Singleton
+class LetterRepositoryImpl @Inject constructor(
+    private val letterDao: LetterDao,
+    private val clock: Clock
+) : LetterRepository {
+
+    override fun observeLetters(): Flow<List<Letter>> =
+        letterDao.observeActive().map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeLetter(id: String): Flow<Letter?> =
+        letterDao.observeById(id).map { it?.toDomain() }
+
+    override fun observeTrashedLetters(): Flow<List<Letter>> =
+        letterDao.observeDeletedLetters().map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeTrashCount(): Flow<Int> = letterDao.observeDeletedCount()
+
+    override suspend fun save(letter: Letter) {
+        require(letter.sender.isNotBlank()) { "sender must not be blank" }
+        require(letter.recipient.isNotBlank()) { "recipient must not be blank" }
+        require(letter.subject.isNotBlank()) { "subject must not be blank" }
+        require(letter.content.isNotBlank()) { "content must not be blank" }
+        require(letter.timeMinutes in 0 until MINUTES_PER_DAY) { "invalid time" }
+
+        val now = clock.millis()
+        val existing = letterDao.getById(letter.id)
+        letterDao.upsert(
+            letter.copy(
+                sender = TextLimits.truncateGraphemes(letter.sender.trim(), MAX_PARTY_GRAPHEMES),
+                recipient = TextLimits.truncateGraphemes(letter.recipient.trim(), MAX_PARTY_GRAPHEMES),
+                subject = TextLimits.truncateGraphemes(letter.subject.trim(), MAX_SUBJECT_GRAPHEMES),
+                content = TextLimits.truncateGraphemes(letter.content.trim(), MAX_CONTENT_GRAPHEMES),
+                createdAt = existing?.createdAt?.let(Instant::ofEpochMilli)
+                    ?: Instant.ofEpochMilli(now),
+                updatedAt = Instant.ofEpochMilli(now)
+            ).toEntity(revision = existing?.revision ?: 1L)
+        )
+    }
+
+    override suspend fun softDelete(id: String) {
+        val now = clock.millis()
+        letterDao.markDeleted(id = id, deletedAt = now, updatedAt = now)
+    }
+
+    override suspend fun restore(id: String) {
+        letterDao.restore(id = id, updatedAt = clock.millis())
+    }
+
+    override suspend fun deletePermanently(id: String) {
+        letterDao.deletePermanently(id)
+    }
+
+    override suspend fun purgeExpiredTrash(retentionDays: Int) {
+        val cutoff = clock.millis() - retentionDays * 24L * 60L * 60L * 1000L
+        letterDao.purgeDeletedBefore(cutoff)
+    }
+
+    override suspend fun emptyTrash() {
+        letterDao.clearTrash()
+    }
+
+    companion object {
+        const val MAX_PARTY_GRAPHEMES = 80
+        const val MAX_SUBJECT_GRAPHEMES = 120
+        const val MAX_CONTENT_GRAPHEMES = 5000
+        private const val MINUTES_PER_DAY = 24 * 60
     }
 }

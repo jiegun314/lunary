@@ -1,8 +1,8 @@
 # Lunary
 
-Lunary（月忆）是一个离线优先的 Android 私人纪念日与人生事件管理器。界面使用简体中文和 Material 3，核心功能无需账号或网络，数据默认保存在本机。
+Lunary（月忆）是一个离线优先的 Android 私人纪念日、芳札与人生事件管理器。界面使用简体中文和 Material 3，核心功能无需账号或网络，数据默认保存在本机。
 
-> An offline-first Android anniversary and milestone manager built with Kotlin, Jetpack Compose, and Material 3.
+> An offline-first Android anniversary, letter, and milestone manager built with Kotlin, Jetpack Compose, and Material 3.
 
 - 隐私说明：[PRIVACY.md](PRIVACY.md)
 - 发布、签名与已知限制：[RELEASE.md](RELEASE.md)
@@ -18,6 +18,12 @@ Lunary（月忆）是一个离线优先的 Android 私人纪念日与人生事�
 - **详情页**：展示日期、间隔、分类、标签、备注、地点、提醒和附件；附件只读浏览，编辑与删除统一在编辑页完成。
 - **分类与标签**：新建、编辑、软删除、拖拽排序；删除分类后相关事件自动变为未分类。
 
+### 芳札
+
+- **书信记录**：与日历、纪念日并列的第三个标签页；记录日期、时间、发件人、收件人、标题和正文，四项文字内容均为必填。
+- **日历联动**：有芳札的日期在日期圆内显示紫色细线；当天列表先纪念日、后芳札。芳札卡片左侧固定紫色色条，背景使用淡灰色以区别于纪念日。
+- **查看、编辑与回收站**：支持只读详情与编辑；编辑页可删除，删除后进入回收站保留 30 天，可恢复或彻底删除。
+
 ### 提醒与附件
 
 - **多条提醒**：同一事件可设置当天 / 1 天 / 3 天 / 7 天提醒，每条可自定义时间；使用 `AlarmManager` 调度，精确闹钟不可用时自动降级。
@@ -28,9 +34,9 @@ Lunary（月忆）是一个离线优先的 Android 私人纪念日与人生事�
 ### 隐私与数据
 
 - **应用锁**：6–12 位数字 PIN，支持生物识别解锁、自动锁定，以及锁定时隐藏通知中的事件标题。
-- **本地加密备份**：导出 / 导入 `.lunary` 文件，包含事件、分类、标签、提醒和附件；使用 PBKDF2-HMAC-SHA256 与 AES-256-GCM，恢复前自动生成本机快照。
+- **本地加密备份**：导出 / 导入 `.lunary` 文件，包含事件、分类、标签、提醒、附件和芳札；使用 PBKDF2-HMAC-SHA256 与 AES-256-GCM，恢复前自动生成本机快照。
 - **自动备份**：本地文件夹、每天 / 每周 / 每月计划，保留最近 14 份；备份密码由 Android Keystore 加密保存。
-- **回收站**：删除的事件保留 30 天，可恢复或彻底删除。
+- **回收站**：删除的事件和芳札保留 30 天，可恢复或彻底删除。
 - **离线优先**：没有账号系统，核心功能不发起网络请求；附件和数据库都存放在应用私有目录。
 
 ### 界面与无障碍
@@ -60,7 +66,7 @@ app/src/main/java/com/lunary/app/
 
 - **UI 层**：Compose 声明式界面，ViewModel 持有状态并通过 `StateFlow` 暴露；导航和自适应外壳集中在 `LunaryApp.kt`。
 - **领域层**：不依赖 Android 框架，集中处理闰日、重复规则、周年间隔、字素截断等纯逻辑。
-- **数据层**：Room 单库保存事件、分类、标签、关联、提醒、附件和同步队列；DataStore 保存偏好；Repository 统一封装读写与软删除。
+- **数据层**：Room 单库保存事件、分类、标签、关联、提醒、附件、芳札和同步队列；DataStore 保存偏好；Repository 统一封装读写与软删除。
 - **安全**：附件落在 `filesDir/attachments/`，通过 `FileProvider` 提供应用内 URI；备份使用分块 AES-GCM 容器；应用锁 PIN 与自动备份密码由 Android Keystore 保护的密钥加密。
 - **测试**：JUnit 单元测试、Room 仪器测试和 Compose UI 测试；CI 校验 Gradle Wrapper，并执行 debug / release 构建、单元测试与 Lint。
 

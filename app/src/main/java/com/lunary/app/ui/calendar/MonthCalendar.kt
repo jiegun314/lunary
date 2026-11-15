@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.lunary.app.ui.LunarDate
+import com.lunary.app.ui.components.LetterAccent
 import androidx.compose.ui.unit.sp
 import com.lunary.app.ui.weekdayShort
 import java.time.DayOfWeek
@@ -67,7 +70,8 @@ fun MonthGrid(
     firstDayOfWeek: DayOfWeek,
     cellSize: Dp,
     onDateClick: (LocalDate) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    letterDates: Set<LocalDate> = emptySet()
 ) {
     val dates = monthGridDates(month, firstDayOfWeek)
     val lunarLabels = androidx.compose.runtime.remember(dates) {
@@ -88,6 +92,7 @@ fun MonthGrid(
                         selected = date == selectedDate,
                         today = date == today,
                         eventColors = eventColorsByDate[date].orEmpty(),
+                        hasLetter = date in letterDates,
                         lunarText = lunarLabels[date].orEmpty(),
                         cellSize = rowHeight,
                         onClick = { onDateClick(date) },
@@ -106,16 +111,24 @@ private fun DayCell(
     selected: Boolean,
     today: Boolean,
     eventColors: List<Int>,
+    hasLetter: Boolean,
     lunarText: String,
     cellSize: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    val circleSize = minOf(40.dp * fontScale, cellSize - 4.dp)
+    val textScale = fontScale.coerceAtMost(1.3f)
+    val cellWidth = cellSize / fontScale
+    val circleSize = minOf(40.dp * fontScale, cellWidth - 4.dp)
     val touchHeight = maxOf(48.dp, cellSize)
     val description = androidx.compose.ui.res.stringResource(
-        com.lunary.app.R.string.day_cell_description,
+        when {
+            hasLetter && eventColors.isNotEmpty() ->
+                com.lunary.app.R.string.day_cell_description_event_letter
+            hasLetter -> com.lunary.app.R.string.day_cell_description_letter
+            else -> com.lunary.app.R.string.day_cell_description
+        },
         date.year,
         date.monthValue,
         date.dayOfMonth,
@@ -136,20 +149,23 @@ private fun DayCell(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(circleSize)
-                .clip(CircleShape)
-                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                .then(
-                    if (today && !selected) {
-                        Modifier.background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                            CircleShape
-                        )
-                    } else Modifier
-                )
-        ) {
+        Box(modifier = Modifier.size(circleSize)) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(CircleShape)
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.primary else Color.Transparent
+                    )
+                    .then(
+                        if (today && !selected) {
+                            Modifier.background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                CircleShape
+                            )
+                        } else Modifier
+                    )
+            )
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -157,16 +173,32 @@ private fun DayCell(
                 Text(
                     text = date.dayOfMonth.toString(),
                     color = contentColor,
-                    fontSize = 16.sp,
+                    fontSize = (16f * textScale / fontScale).sp,
+                    lineHeight = (18f * textScale / fontScale).sp,
                     fontWeight = if (selected || today) FontWeight.SemiBold else FontWeight.Normal
                 )
                 if (lunarText.isNotEmpty()) {
                     Text(
                         text = lunarText,
                         color = contentColor.copy(alpha = 0.78f),
-                        fontSize = if (cellSize < 44.dp) 7.sp else 9.sp,
-                        lineHeight = if (cellSize < 44.dp) 8.sp else 10.sp,
+                        fontSize = ((if (cellWidth < 44.dp) 7f else 9f) * textScale / fontScale).sp,
+                        lineHeight = ((if (cellWidth < 44.dp) 8f else 10f) * textScale / fontScale).sp,
                         maxLines = 1
+                    )
+                }
+                if (hasLetter) {
+                    Box(
+                        modifier = Modifier
+                            .width(12.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp))
+                            .background(
+                                when {
+                                    selected -> MaterialTheme.colorScheme.onPrimary
+                                    !inMonth -> LetterAccent.copy(alpha = 0.45f)
+                                    else -> LetterAccent
+                                }
+                            )
                     )
                 }
             }

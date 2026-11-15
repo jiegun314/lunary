@@ -1,26 +1,38 @@
 package com.lunary.app.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -37,6 +49,9 @@ import com.lunary.app.ui.calendar.CalendarScreen
 import com.lunary.app.ui.detail.DetailScreen
 import com.lunary.app.ui.editor.EditorScreen
 import com.lunary.app.ui.events.EventsScreen
+import com.lunary.app.ui.letters.LetterDetailScreen
+import com.lunary.app.ui.letters.LetterEditorScreen
+import com.lunary.app.ui.letters.LettersScreen
 import com.lunary.app.ui.settings.SettingsScreen
 import com.lunary.app.ui.taxonomy.CategoryScreen
 import com.lunary.app.ui.trash.TrashScreen
@@ -50,7 +65,8 @@ private data class TopLevelDestination(
 
 private val topLevelDestinations = listOf(
     TopLevelDestination("calendar", Icons.Default.DateRange, R.string.nav_calendar),
-    TopLevelDestination("events", Icons.Default.List, R.string.nav_events)
+    TopLevelDestination("events", Icons.Default.List, R.string.nav_events),
+    TopLevelDestination("letters", Icons.Default.Email, R.string.nav_letters)
 )
 
 @Composable
@@ -81,6 +97,7 @@ fun LunaryApp(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val expanded = maxWidth >= 600.dp
+        val railHasRoom = maxHeight >= 480.dp
         val showRail = expanded && (showNavigation || settingsTree)
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -108,6 +125,9 @@ fun LunaryApp(
             ) {
                 if (showRail) {
                     NavigationRail(modifier = Modifier.width(88.dp)) {
+                        if (railHasRoom) {
+                            BrandRailHeader()
+                        }
                         topLevelDestinations.forEach { destination ->
                             NavigationRailItem(
                                 selected = currentRoute == destination.route,
@@ -141,6 +161,10 @@ fun LunaryApp(
                                 navController.navigate("editor?date=${date.toEpochDay()}")
                             },
                             onEventClick = { id -> navController.navigate("detail/$id") },
+                            onAddLetter = { date ->
+                                navController.navigate("letter_editor?date=${date.toEpochDay()}")
+                            },
+                            onLetterClick = { id -> navController.navigate("letter_detail/$id") },
                             onOpenSettings = {
                                 navController.navigate("settings") { launchSingleTop = true }
                             }
@@ -151,6 +175,15 @@ fun LunaryApp(
                             onAddEvent = { navController.navigate("editor") },
                             onEventClick = { id -> navController.navigate("detail/$id") },
                             onEditEvent = { id -> navController.navigate("editor?eventId=$id") },
+                            onOpenSettings = {
+                                navController.navigate("settings") { launchSingleTop = true }
+                            }
+                        )
+                    }
+                    composable("letters") {
+                        LettersScreen(
+                            onAddLetter = { navController.navigate("letter_editor") },
+                            onLetterClick = { id -> navController.navigate("letter_detail/$id") },
                             onOpenSettings = {
                                 navController.navigate("settings") { launchSingleTop = true }
                             }
@@ -202,6 +235,44 @@ fun LunaryApp(
                             }
                         )
                     }
+                    composable(
+                        route = "letter_detail/{letterId}",
+                        arguments = listOf(navArgument("letterId") { type = NavType.StringType })
+                    ) {
+                        LetterDetailScreen(
+                            onBack = { navController.popBackStack() },
+                            onEdit = { id ->
+                                navController.navigate("letter_editor?letterId=$id")
+                            }
+                        )
+                    }
+                    composable(
+                        route = "letter_editor?letterId={letterId}&date={date}",
+                        arguments = listOf(
+                            navArgument("letterId") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            },
+                            navArgument("date") {
+                                type = NavType.LongType
+                                defaultValue = Long.MIN_VALUE
+                            }
+                        )
+                    ) {
+                        LetterEditorScreen(
+                            onClose = { navController.popBackStack() },
+                            onSaved = { navController.popBackStack() },
+                            onDeleted = {
+                                val previousRoute =
+                                    navController.previousBackStackEntry?.destination?.route
+                                navController.popBackStack()
+                                if (previousRoute?.startsWith("letter_detail/") == true) {
+                                    navController.popBackStack()
+                                }
+                            }
+                        )
+                    }
                     composable("trash") {
                         TrashScreen(onBack = { navController.popBackStack() })
                     }
@@ -220,5 +291,29 @@ fun LunaryApp(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun BrandRailHeader() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(R.drawable.ic_brand_logo),
+            contentDescription = null,
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.app_name),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

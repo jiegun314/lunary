@@ -3,11 +3,13 @@ package com.lunary.app.di
 import com.lunary.app.data.repository.AttachmentRepositoryImpl
 import com.lunary.app.data.repository.CategoryRepositoryImpl
 import com.lunary.app.data.repository.EventRepositoryImpl
+import com.lunary.app.data.repository.LetterRepositoryImpl
 import com.lunary.app.data.repository.ReminderRepositoryImpl
 import com.lunary.app.data.repository.TagRepositoryImpl
 import com.lunary.app.domain.repository.AttachmentRepository
 import com.lunary.app.domain.repository.CategoryRepository
 import com.lunary.app.domain.repository.EventRepository
+import com.lunary.app.domain.repository.LetterRepository
 import com.lunary.app.domain.repository.ReminderRepository
 import com.lunary.app.domain.repository.TagRepository
 import dagger.Binds
@@ -23,6 +25,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindEventRepository(impl: EventRepositoryImpl): EventRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLetterRepository(impl: LetterRepositoryImpl): LetterRepository
 
     @Binds
     @Singleton

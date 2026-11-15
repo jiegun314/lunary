@@ -5,6 +5,7 @@ import com.lunary.app.data.local.entity.CategoryEntity
 import com.lunary.app.domain.model.EmojiCatalog
 import com.lunary.app.data.local.entity.EventEntity
 import com.lunary.app.data.local.entity.EventTagCrossRef
+import com.lunary.app.data.local.entity.LetterEntity
 import com.lunary.app.data.local.entity.ReminderEntity
 import com.lunary.app.data.local.entity.TagEntity
 import org.json.JSONArray
@@ -22,6 +23,7 @@ object BackupJson {
         put("reminderCount", manifest.reminderCount)
         put("attachmentCount", manifest.attachmentCount)
         put("attachmentBytes", manifest.attachmentBytes)
+        put("letterCount", manifest.letterCount)
         put("dataSha256", manifest.dataSha256)
         manifest.settings?.let { settings ->
             put(
@@ -60,6 +62,7 @@ object BackupJson {
             reminderCount = json.getInt("reminderCount"),
             attachmentCount = json.getInt("attachmentCount"),
             attachmentBytes = json.getLong("attachmentBytes"),
+            letterCount = json.optInt("letterCount", 0),
             dataSha256 = json.getString("dataSha256"),
             settings = json.optJSONObject("settings")?.let { s ->
                 BackupSettings(
@@ -96,6 +99,7 @@ object BackupJson {
         })
         put("reminders", JSONArray().apply { data.reminders.forEach { put(it.toJson()) } })
         put("attachments", JSONArray().apply { data.attachments.forEach { put(it.toJson()) } })
+        put("letters", JSONArray().apply { data.letters.forEach { put(it.toJson()) } })
     }.toString().toByteArray(Charsets.UTF_8)
 
     fun decodeSnapshot(bytes: ByteArray): SnapshotData {
@@ -109,7 +113,8 @@ object BackupJson {
                 EventTagCrossRef(it.getString("eventId"), it.getString("tagId"))
             },
             reminders = json.getJSONArray("reminders").mapObjects { it.toReminder() },
-            attachments = json.getJSONArray("attachments").mapObjects { it.toAttachment() }
+            attachments = json.getJSONArray("attachments").mapObjects { it.toAttachment() },
+            letters = json.optJSONArray("letters")?.mapObjects { it.toLetter() } ?: emptyList()
         )
     }
 
@@ -215,4 +220,26 @@ object BackupJson {
 
     private inline fun <T> JSONArray.mapObjects(transform: (JSONObject) -> T): List<T> =
         buildList { for (i in 0 until length()) add(transform(getJSONObject(i))) }
+    private fun LetterEntity.toJson() = JSONObject().apply {
+        put("id", id); put("dateEpochDay", dateEpochDay); put("timeMinutes", timeMinutes)
+        put("sender", sender); put("recipient", recipient); put("subject", subject)
+        put("content", content); put("createdAt", createdAt); put("updatedAt", updatedAt)
+        put("deletedAt", deletedAt); put("revision", revision)
+    }
+
+    private fun JSONObject.toLetter() = LetterEntity(
+        id = getString("id"),
+        dateEpochDay = getLong("dateEpochDay"),
+        timeMinutes = optInt("timeMinutes", 0),
+        sender = getString("sender"),
+        recipient = getString("recipient"),
+        subject = getString("subject"),
+        content = getString("content"),
+        createdAt = getLong("createdAt"),
+        updatedAt = getLong("updatedAt"),
+        deletedAt = optLongOrNull("deletedAt"),
+        revision = optLong("revision", 1)
+    )
+
+
 }

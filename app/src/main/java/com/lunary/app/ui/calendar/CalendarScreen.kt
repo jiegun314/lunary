@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,13 +15,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -31,7 +33,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -39,14 +44,12 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,8 +66,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunary.app.R
 import com.lunary.app.domain.date.DayMath
-import com.lunary.app.ui.components.BrandLockup
+import com.lunary.app.ui.components.LunaryTopAppBar
 import com.lunary.app.ui.components.EventRow
+import com.lunary.app.ui.components.LetterAccent
+import com.lunary.app.ui.components.LetterRow
 import com.lunary.app.ui.formatMonthDay
 import com.lunary.app.ui.formatSelectedDate
 import com.lunary.app.ui.LunarDate
@@ -77,23 +82,19 @@ import java.time.YearMonth
 fun CalendarScreen(
     onAddEvent: (LocalDate) -> Unit,
     onEventClick: (String) -> Unit,
+    onAddLetter: (LocalDate) -> Unit,
+    onLetterClick: (String) -> Unit,
     onOpenSettings: () -> Unit,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showAddSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { BrandLockup() },
+            LunaryTopAppBar(
+                title = stringResource(R.string.nav_calendar),
                 actions = {
-                    ViewModeMenu(
-                        mode = state.viewMode,
-                        onModeChange = viewModel::setViewMode
-                    )
-                    TextButton(onClick = viewModel::goToday) {
-                        Text(stringResource(R.string.today))
-                    }
                     IconButton(onClick = onOpenSettings) {
                         Icon(
                             Icons.Default.Settings,
@@ -104,10 +105,10 @@ fun CalendarScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onAddEvent(state.selectedDate) }) {
+            FloatingActionButton(onClick = { showAddSheet = true }) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = stringResource(R.string.add_event)
+                    contentDescription = stringResource(R.string.add)
                 )
             }
         }
@@ -125,6 +126,8 @@ fun CalendarScreen(
                             state = state,
                             onShift = viewModel::shiftPeriod,
                             onSelect = viewModel::selectDate,
+                            onModeChange = viewModel::setViewMode,
+                            onToday = viewModel::goToday,
                             modifier = Modifier
                                 .weight(1.1f)
                                 .fillMaxHeight()
@@ -133,6 +136,7 @@ fun CalendarScreen(
                         DayEventsPane(
                             state = state,
                             onEventClick = onEventClick,
+                            onLetterClick = onLetterClick,
                             modifier = Modifier
                                 .weight(0.9f)
                                 .fillMaxHeight()
@@ -143,9 +147,62 @@ fun CalendarScreen(
                         state = state,
                         onShift = viewModel::shiftPeriod,
                         onSelect = viewModel::selectDate,
-                        onEventClick = onEventClick
+                        onModeChange = viewModel::setViewMode,
+                        onToday = viewModel::goToday,
+                        onEventClick = onEventClick,
+                        onLetterClick = onLetterClick
                     )
                 }
+            }
+        }
+    }
+
+    if (showAddSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showAddSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp)
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.add_to_date,
+                        formatSelectedDate(state.selectedDate)
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.add_event)) },
+                    supportingContent = { Text(stringResource(R.string.add_event_hint)) },
+                    leadingContent = {
+                        Icon(Icons.Default.DateRange, contentDescription = null)
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    modifier = Modifier.clickable {
+                        showAddSheet = false
+                        onAddEvent(state.selectedDate)
+                    }
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.add_letter)) },
+                    supportingContent = { Text(stringResource(R.string.add_letter_hint)) },
+                    leadingContent = {
+                        Icon(Icons.Default.Email, contentDescription = null)
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    modifier = Modifier.clickable {
+                        showAddSheet = false
+                        onAddLetter(state.selectedDate)
+                    }
+                )
             }
         }
     }
@@ -157,9 +214,16 @@ private fun CalendarPane(
     state: CalendarUiState,
     onShift: (Long) -> Unit,
     onSelect: (LocalDate) -> Unit,
+    onModeChange: (CalendarViewMode) -> Unit,
+    onToday: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
+        CalendarControls(
+            mode = state.viewMode,
+            onModeChange = onModeChange,
+            onToday = onToday
+        )
         PeriodHeader(state = state, onShift = onShift)
         when (state.viewMode) {
             CalendarViewMode.MONTH -> MonthView(state = state, onSelect = onSelect)
@@ -174,7 +238,10 @@ private fun CompactCalendar(
     state: CalendarUiState,
     onShift: (Long) -> Unit,
     onSelect: (LocalDate) -> Unit,
-    onEventClick: (String) -> Unit
+    onModeChange: (CalendarViewMode) -> Unit,
+    onToday: () -> Unit,
+    onEventClick: (String) -> Unit,
+    onLetterClick: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -185,26 +252,15 @@ private fun CompactCalendar(
                 state = state,
                 onShift = onShift,
                 onSelect = onSelect,
+                onModeChange = onModeChange,
+                onToday = onToday,
                 modifier = Modifier.fillMaxWidth()
             )
         }
         if (state.viewMode != CalendarViewMode.DAY) {
             item { SelectedDateHeader(state) }
         }
-        if (state.selectedEvents.isEmpty()) {
-            item { EmptyDay() }
-        } else {
-            items(state.selectedEvents, key = { it.id }) { event ->
-                EventRow(
-                    event = event,
-                    categoryName = state.categories.find { it.id == event.categoryId }?.name,
-                    policy = state.leapDayPolicy,
-                    onClick = { onEventClick(event.id) },
-                    today = state.today,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                )
-            }
-        }
+        dayEntries(state, onEventClick, onLetterClick)
     }
 }
 
@@ -212,6 +268,7 @@ private fun CompactCalendar(
 private fun DayEventsPane(
     state: CalendarUiState,
     onEventClick: (String) -> Unit,
+    onLetterClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -219,21 +276,57 @@ private fun DayEventsPane(
         contentPadding = PaddingValues(bottom = 96.dp)
     ) {
         item { SelectedDateHeader(state) }
-        if (state.selectedEvents.isEmpty()) {
-            item { EmptyDay() }
-        } else {
-            items(state.selectedEvents, key = { it.id }) { event ->
-                EventRow(
-                    event = event,
-                    categoryName = state.categories.find { it.id == event.categoryId }?.name,
-                    policy = state.leapDayPolicy,
-                    onClick = { onEventClick(event.id) },
-                    today = state.today,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                )
-            }
+        dayEntries(state, onEventClick, onLetterClick)
+    }
+}
+
+private fun LazyListScope.dayEntries(
+    state: CalendarUiState,
+    onEventClick: (String) -> Unit,
+    onLetterClick: (String) -> Unit
+) {
+    val hasEvents = state.selectedEvents.isNotEmpty()
+    val hasLetters = state.selectedLetters.isNotEmpty()
+    if (!hasEvents && !hasLetters) {
+        item { EmptyDay() }
+        return
+    }
+    if (hasEvents) {
+        if (hasLetters) {
+            item { DaySectionHeader(stringResource(R.string.events_title)) }
+        }
+        items(state.selectedEvents, key = { "event-${it.id}" }) { event ->
+            EventRow(
+                event = event,
+                categoryName = state.categories.find { it.id == event.categoryId }?.name,
+                policy = state.leapDayPolicy,
+                onClick = { onEventClick(event.id) },
+                today = state.today,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+            )
         }
     }
+    if (hasLetters) {
+        item { DaySectionHeader(stringResource(R.string.letters_title)) }
+        items(state.selectedLetters, key = { "letter-${it.id}" }) { letter ->
+            LetterRow(
+                letter = letter,
+                onClick = { onLetterClick(letter.id) },
+                showDate = false,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DaySectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 2.dp)
+    )
 }
 
 @Composable
@@ -255,13 +348,30 @@ private fun SelectedDateHeader(state: CalendarUiState) {
                     .alignByBaseline()
             )
         }
-        if (state.selectedEvents.isNotEmpty()) {
+        val countText = dayCountText(state)
+        if (countText != null) {
             Text(
-                text = stringResource(R.string.event_count, state.selectedEvents.size),
+                text = countText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun dayCountText(state: CalendarUiState): String? {
+    val eventCount = state.selectedEvents.size
+    val letterCount = state.selectedLetters.size
+    return when {
+        eventCount > 0 && letterCount > 0 -> stringResource(
+            R.string.event_and_letter_count,
+            eventCount,
+            letterCount
+        )
+        letterCount > 0 -> stringResource(R.string.letter_count, letterCount)
+        eventCount > 0 -> stringResource(R.string.event_count, eventCount)
+        else -> null
     }
 }
 
@@ -322,6 +432,26 @@ private fun ViewModeMenu(
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun CalendarControls(
+    mode: CalendarViewMode,
+    onModeChange: (CalendarViewMode) -> Unit,
+    onToday: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ViewModeMenu(mode = mode, onModeChange = onModeChange)
+        Spacer(Modifier.weight(1f))
+        TextButton(onClick = onToday) {
+            Text(stringResource(R.string.today))
         }
     }
 }
@@ -392,6 +522,9 @@ private fun MonthView(
                 .map { it.colorArgb }
         }
     }
+    val letterDates = remember(dates, state.allLetters) {
+        state.allLetters.mapTo(mutableSetOf()) { it.date }
+    }
     WeekdayHeader(
         firstDayOfWeek = state.firstDayOfWeek,
         modifier = Modifier.padding(horizontal = 0.dp, vertical = 2.dp)
@@ -410,6 +543,7 @@ private fun MonthView(
             selectedDate = state.selectedDate,
             today = state.today,
             eventColorsByDate = eventColors,
+            letterDates = letterDates,
             firstDayOfWeek = state.firstDayOfWeek,
             cellSize = cellSize,
             onDateClick = onSelect
@@ -435,8 +569,13 @@ private fun WeekView(
                 .filter { DayMath.occursOn(it, date, state.leapDayPolicy) }
                 .map { it.colorArgb }
             val count = colors.size
+            val hasLetter = state.allLetters.any { it.date == date }
             val description = stringResource(
-                R.string.day_cell_description,
+                when {
+                    hasLetter && count > 0 -> R.string.day_cell_description_event_letter
+                    hasLetter -> R.string.day_cell_description_letter
+                    else -> R.string.day_cell_description
+                },
                 date.year,
                 date.monthValue,
                 date.dayOfMonth,
@@ -471,6 +610,9 @@ private fun WeekView(
                     color = if (selected) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurface
                 )
+                if (hasLetter) {
+                    LetterUnderline(selected = selected)
+                }
                 if (count > 0) {
                     Row(
                         modifier = Modifier.padding(top = 2.dp),
@@ -490,6 +632,20 @@ private fun WeekView(
             }
         }
     }
+}
+
+@Composable
+private fun LetterUnderline(selected: Boolean) {
+    Box(
+        modifier = Modifier
+            .padding(top = 1.dp)
+            .width(12.dp)
+            .height(2.dp)
+            .clip(RoundedCornerShape(1.dp))
+            .background(
+                if (selected) MaterialTheme.colorScheme.onPrimary else LetterAccent
+            )
+    )
 }
 
 @Composable
@@ -530,11 +686,7 @@ private fun DaySummary(state: CalendarUiState) {
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = if (state.selectedEvents.isEmpty()) {
-                    stringResource(R.string.no_event_count)
-                } else {
-                    stringResource(R.string.event_count, state.selectedEvents.size)
-                },
+                text = dayCountText(state) ?: stringResource(R.string.no_entry_count),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)

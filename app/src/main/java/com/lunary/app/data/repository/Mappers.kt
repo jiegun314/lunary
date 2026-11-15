@@ -4,6 +4,7 @@ import com.lunary.app.data.local.entity.AttachmentEntity
 import com.lunary.app.data.local.entity.CategoryEntity
 import com.lunary.app.data.local.entity.EventEntity
 import com.lunary.app.data.local.entity.EventWithTags
+import com.lunary.app.data.local.entity.LetterEntity
 import com.lunary.app.data.local.entity.ReminderEntity
 import com.lunary.app.data.local.entity.TagEntity
 import com.lunary.app.domain.model.Attachment
@@ -11,6 +12,7 @@ import com.lunary.app.domain.model.Category
 import com.lunary.app.domain.model.DateMode
 import com.lunary.app.domain.model.EmojiCatalog
 import com.lunary.app.domain.model.Event
+import com.lunary.app.domain.model.Letter
 import com.lunary.app.domain.model.Recurrence
 import com.lunary.app.domain.model.Reminder
 import com.lunary.app.domain.model.Tag
@@ -152,4 +154,31 @@ fun Attachment.toEntity(): AttachmentEntity = AttachmentEntity(
     createdAt = createdAt.toEpochMilli(),
     updatedAt = updatedAt.toEpochMilli(),
     deletedAt = deletedAt?.toEpochMilli()
+)
+
+fun LetterEntity.toDomain(): Letter = Letter(
+    id = id,
+    date = LocalDate.ofEpochDay(dateEpochDay),
+    timeMinutes = timeMinutes,
+    sender = sender,
+    recipient = recipient,
+    subject = subject,
+    content = content,
+    createdAt = Instant.ofEpochMilli(createdAt),
+    updatedAt = Instant.ofEpochMilli(updatedAt),
+    deletedAt = deletedAt?.let(Instant::ofEpochMilli)
+)
+
+fun Letter.toEntity(revision: Long = 1): LetterEntity = LetterEntity(
+    id = id,
+    dateEpochDay = date.toEpochDay(),
+    timeMinutes = timeMinutes,
+    sender = sender,
+    recipient = recipient,
+    subject = subject,
+    content = content,
+    createdAt = createdAt.toEpochMilli(),
+    updatedAt = updatedAt.toEpochMilli(),
+    deletedAt = deletedAt?.toEpochMilli(),
+    revision = revision
 )

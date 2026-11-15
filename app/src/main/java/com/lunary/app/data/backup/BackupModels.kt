@@ -4,12 +4,13 @@ import com.lunary.app.data.local.entity.AttachmentEntity
 import com.lunary.app.data.local.entity.CategoryEntity
 import com.lunary.app.data.local.entity.EventEntity
 import com.lunary.app.data.local.entity.EventTagCrossRef
+import com.lunary.app.data.local.entity.LetterEntity
 import com.lunary.app.data.local.entity.ReminderEntity
 import com.lunary.app.data.local.entity.TagEntity
 import java.io.File
 import java.util.zip.ZipFile
 
-const val BACKUP_SCHEMA_VERSION = 2
+const val BACKUP_SCHEMA_VERSION = 3
 const val BACKUP_MAGIC = "LUNARYBK1"
 
 data class BackupManifest(
@@ -24,7 +25,8 @@ data class BackupManifest(
     val attachmentBytes: Long,
     val dataSha256: String,
     val files: List<BackupFileEntry>,
-    val settings: BackupSettings? = null
+    val settings: BackupSettings? = null,
+    val letterCount: Int = 0
 )
 
 data class BackupSettings(
@@ -48,7 +50,8 @@ data class SnapshotData(
     val tags: List<TagEntity>,
     val eventTags: List<EventTagCrossRef>,
     val reminders: List<ReminderEntity>,
-    val attachments: List<AttachmentEntity>
+    val attachments: List<AttachmentEntity>,
+    val letters: List<LetterEntity> = emptyList()
 )
 
 data class BackupArchive(
@@ -87,6 +90,7 @@ data class BackupArchive(
     val tagCount: Int get() = data.tags.size
     val reminderCount: Int get() = data.reminders.size
     val attachmentCount: Int get() = data.attachments.size
+    val letterCount: Int get() = data.letters.size
 }
 
 data class RestoreResult(
@@ -95,5 +99,6 @@ data class RestoreResult(
     val tags: Int,
     val reminders: Int,
     val attachments: Int,
-    val autoBackupName: String
+    val autoBackupName: String,
+    val letters: Int = 0
 )

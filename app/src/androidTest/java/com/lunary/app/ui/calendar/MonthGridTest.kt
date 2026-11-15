@@ -36,4 +36,24 @@ class MonthGridTest {
         }
         compose.onNodeWithContentDescription("2026年11月13日，2 个纪念日").assertExists()
     }
+
+    @Test
+    fun selectedDayExposesLetterToAccessibility() {
+        val selected = LocalDate.of(2026, 11, 13)
+        compose.setContent {
+            LunaryTheme {
+                MonthGrid(
+                    month = YearMonth.of(2026, 11),
+                    selectedDate = selected,
+                    today = selected,
+                    eventColorsByDate = emptyMap(),
+                    firstDayOfWeek = DayOfWeek.MONDAY,
+                    cellSize = 52.dp,
+                    onDateClick = {},
+                    letterDates = setOf(selected)
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("2026年11月13日，有芳札").assertExists()
+    }
 }

@@ -24,6 +24,11 @@ fun formatDate(date: LocalDate): String = "${date.year}年${date.monthValue}月$
 
 fun formatMonthDay(date: LocalDate): String = "${date.monthValue}月${date.dayOfMonth}日"
 
+fun formatTime(minutes: Int): String {
+    val normalized = minutes.coerceIn(0, 23 * 60 + 59)
+    return "%02d:%02d".format(normalized / 60, normalized % 60)
+}
+
 fun formatSelectedDate(date: LocalDate): String =
     "${date.monthValue}月${date.dayOfMonth}日 · ${weekdayLong(date.dayOfWeek)}"
 
