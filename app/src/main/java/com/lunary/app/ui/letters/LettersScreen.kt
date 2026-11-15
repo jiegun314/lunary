@@ -20,19 +20,19 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -56,14 +56,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunary.app.R
 import com.lunary.app.ui.components.LetterRow
+import com.lunary.app.ui.components.SearchFilterBar
 import com.lunary.app.ui.components.LunaryTopAppBar
 import com.lunary.app.ui.formatDate
 import java.time.LocalDate
@@ -87,21 +86,6 @@ fun LettersScreen(
             LunaryTopAppBar(
                 title = stringResource(R.string.letters_title),
                 actions = {
-                    TextButton(
-                        onClick = { showFilters = true },
-                        modifier = Modifier.heightIn(min = 48.dp)
-                    ) {
-                        Text(
-                            if (state.filter.advancedCount > 0) {
-                                stringResource(
-                                    R.string.filter_button_count,
-                                    state.filter.advancedCount
-                                )
-                            } else {
-                                stringResource(R.string.filter_button)
-                            }
-                        )
-                    }
                     IconButton(onClick = onOpenSettings) {
                         Icon(
                             Icons.Default.Settings,
@@ -132,35 +116,12 @@ fun LettersScreen(
                     .fillMaxWidth()
                     .fillMaxHeight()
             ) {
-                OutlinedTextField(
-                    value = state.filter.query,
-                    onValueChange = viewModel::setQuery,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.search_letters),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        if (state.filter.query.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.setQuery("") }) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = stringResource(R.string.close)
-                                )
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.extraLarge,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+                SearchFilterBar(
+                    query = state.filter.query,
+                    onQueryChange = viewModel::setQuery,
+                    placeholder = stringResource(R.string.search_letters),
+                    filterCount = state.filter.advancedCount,
+                    onFilterClick = { showFilters = true }
                 )
 
                 when {
@@ -203,9 +164,20 @@ fun LettersScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth(),
-                            contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp),
+                            contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 96.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            item {
+                                Text(
+                                    text = stringResource(
+                                        R.string.letter_count,
+                                        state.letters.size
+                                    ),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                                )
+                            }
                             items(state.letters, key = { it.id }) { letter ->
                                 LetterRow(
                                     letter = letter,
@@ -323,7 +295,7 @@ private fun LetterFilterSheet(
         )
 
         Text(
-            text = stringResource(R.string.filter_time_range),
+            text = stringResource(R.string.filter_time),
             style = MaterialTheme.typography.titleSmall
         )
         FlowRow(
@@ -333,21 +305,57 @@ private fun LetterFilterSheet(
             FilterChip(
                 selected = filter.startDate == null && filter.endDate == null,
                 onClick = { onDateRange(null, null) },
+                leadingIcon = if (filter.startDate == null && filter.endDate == null) {
+                    {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else null,
                 label = { Text(stringResource(R.string.filter_all_time)) }
             )
             FilterChip(
                 selected = filter.startDate == last7Start && filter.endDate == today,
                 onClick = { onDateRange(last7Start, today) },
+                leadingIcon = if (filter.startDate == last7Start && filter.endDate == today) {
+                    {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else null,
                 label = { Text(stringResource(R.string.filter_last_7_days)) }
             )
             FilterChip(
                 selected = filter.startDate == last30Start && filter.endDate == today,
                 onClick = { onDateRange(last30Start, today) },
+                leadingIcon = if (filter.startDate == last30Start && filter.endDate == today) {
+                    {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else null,
                 label = { Text(stringResource(R.string.filter_last_30_days)) }
             )
             FilterChip(
                 selected = filter.startDate == yearStart && filter.endDate == yearEnd,
                 onClick = { onDateRange(yearStart, yearEnd) },
+                leadingIcon = if (filter.startDate == yearStart && filter.endDate == yearEnd) {
+                    {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else null,
                 label = { Text(stringResource(R.string.filter_this_year)) }
             )
         }

@@ -38,6 +38,9 @@ data class EventsFilter(
         get() = (if (categoryId != null) 1 else 0) +
             tagIds.size +
             (if (location != LocationFilter.ANY) 1 else 0)
+
+    val activeCount: Int
+        get() = advancedCount + if (quick != EventFilter.ALL) 1 else 0
 }
 
 data class EventsUiState(
@@ -160,12 +163,8 @@ class EventsViewModel @Inject constructor(
         filter.value = filter.value.copy(location = location)
     }
 
-    fun clearAdvancedFilters() {
-        filter.value = filter.value.copy(
-            categoryId = null,
-            tagIds = emptySet(),
-            location = LocationFilter.ANY
-        )
+    fun clearFilters() {
+        filter.value = EventsFilter(query = filter.value.query)
     }
 
     private fun matchesQuickFilter(

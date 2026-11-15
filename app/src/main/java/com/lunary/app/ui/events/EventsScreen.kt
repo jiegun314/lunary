@@ -1,6 +1,5 @@
 package com.lunary.app.ui.events
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -12,29 +11,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,12 +47,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunary.app.R
 import com.lunary.app.ui.components.EventRow
+import com.lunary.app.ui.components.SearchFilterBar
 import com.lunary.app.ui.components.LunaryTopAppBar
 import com.lunary.app.ui.detail.DetailScreen
 import androidx.navigation.NavType
@@ -103,70 +101,25 @@ fun EventsScreen(
             val contentWidth = maxWidth
             val twoPane = false // list+detail pane deferred; avoid empty right pane
             var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
-            Row(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = if (twoPane) Arrangement.Start else Arrangement.Center
+            ) {
                 Column(
                     modifier = Modifier
-                        .width(if (twoPane) contentWidth * 0.46f else contentWidth)
+                        .width(
+                            if (twoPane) contentWidth * 0.46f
+                            else contentWidth.coerceAtMost(720.dp)
+                        )
                         .fillMaxHeight()
                 ) {
-            OutlinedTextField(
-                value = state.filter.query,
-                onValueChange = viewModel::setQuery,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text(stringResource(R.string.search_events)) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (state.filter.query.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.setQuery("") }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = stringResource(R.string.close)
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = MaterialTheme.shapes.extraLarge,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+            SearchFilterBar(
+                query = state.filter.query,
+                onQueryChange = viewModel::setQuery,
+                placeholder = stringResource(R.string.search_events),
+                filterCount = state.filter.activeCount,
+                onFilterClick = { showFilters = true }
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                EventFilter.entries.forEach { filter ->
-                    FilterChip(
-                        selected = state.filter.quick == filter,
-                        onClick = { viewModel.setQuickFilter(filter) },
-                        label = {
-                            Text(
-                                when (filter) {
-                                    EventFilter.ALL -> stringResource(R.string.filter_all)
-                                    EventFilter.UPCOMING -> stringResource(R.string.filter_upcoming)
-                                    EventFilter.PAST -> stringResource(R.string.filter_past)
-                                }
-                            )
-                        }
-                    )
-                }
-                OutlinedButton(onClick = { showFilters = true }) {
-                    Text(
-                        if (state.filter.advancedCount > 0) {
-                            stringResource(
-                                R.string.filter_button_count,
-                                state.filter.advancedCount
-                            )
-                        } else {
-                            stringResource(R.string.filter_button)
-                        }
-                    )
-                }
-            }
             if (state.events.isEmpty()) {
                 Column(
                     modifier = Modifier
@@ -175,7 +128,7 @@ fun EventsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    val filtering = state.filter.advancedCount > 0
+                    val filtering = state.filter.activeCount > 0
                     Text(
                         text = when {
                             state.filter.query.isNotBlank() -> stringResource(R.string.empty_search)
@@ -186,7 +139,7 @@ fun EventsScreen(
                     )
                     Spacer(Modifier.height(8.dp))
                     if (filtering) {
-                        TextButton(onClick = viewModel::clearAdvancedFilters) {
+                        TextButton(onClick = viewModel::clearFilters) {
                             Text(stringResource(R.string.clear_filters))
                         }
                     } else if (state.filter.query.isBlank()) {
@@ -252,7 +205,8 @@ fun EventsScreen(
                 onCategory = viewModel::setCategory,
                 onToggleTag = viewModel::toggleTag,
                 onLocation = viewModel::setLocation,
-                onReset = viewModel::clearAdvancedFilters,
+                onQuick = viewModel::setQuickFilter,
+                onReset = viewModel::clearFilters,
                 onDone = { showFilters = false }
             )
         }
@@ -313,12 +267,14 @@ private fun EventFilterSheet(
     onCategory: (String?) -> Unit,
     onToggleTag: (String) -> Unit,
     onLocation: (LocationFilter) -> Unit,
+    onQuick: (EventFilter) -> Unit,
     onReset: () -> Unit,
     onDone: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -327,6 +283,37 @@ private fun EventFilterSheet(
             style = MaterialTheme.typography.titleLarge
         )
         Text(
+            text = stringResource(R.string.filter_time),
+            style = MaterialTheme.typography.titleSmall
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            EventFilter.entries.forEach { filter ->
+                FilterChip(
+                    selected = state.filter.quick == filter,
+                    onClick = { onQuick(filter) },
+                    leadingIcon = if (state.filter.quick == filter) {
+                        {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    } else null,
+                    label = {
+                        Text(
+                            when (filter) {
+                                EventFilter.ALL -> stringResource(R.string.filter_all)
+                                EventFilter.UPCOMING -> stringResource(R.string.filter_upcoming)
+                                EventFilter.PAST -> stringResource(R.string.filter_past)
+                            }
+                        )
+                    }
+                )
+            }
+        }
+        HorizontalDivider()
+        Text(
             text = stringResource(R.string.filter_category),
             style = MaterialTheme.typography.titleSmall
         )
@@ -334,12 +321,30 @@ private fun EventFilterSheet(
             FilterChip(
                 selected = state.filter.categoryId == null,
                 onClick = { onCategory(null) },
+                leadingIcon = if (state.filter.categoryId == null) {
+                    {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else null,
                 label = { Text(stringResource(R.string.filter_all_categories)) }
             )
             state.categories.values.sortedBy { it.sortOrder }.forEach { category ->
                 FilterChip(
                     selected = state.filter.categoryId == category.id,
                     onClick = { onCategory(category.id) },
+                    leadingIcon = if (state.filter.categoryId == category.id) {
+                        {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    } else null,
                     label = { Text(category.name) }
                 )
             }
@@ -363,6 +368,15 @@ private fun EventFilterSheet(
                     FilterChip(
                         selected = tag.id in state.filter.tagIds,
                         onClick = { onToggleTag(tag.id) },
+                        leadingIcon = if (tag.id in state.filter.tagIds) {
+                            {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                )
+                            }
+                        } else null,
                         label = {
                             Text(listOfNotNull(tag.emoji, tag.name).joinToString(" "))
                         }
@@ -382,6 +396,15 @@ private fun EventFilterSheet(
                 FilterChip(
                     selected = state.filter.location == location,
                     onClick = { onLocation(location) },
+                    leadingIcon = if (state.filter.location == location) {
+                        {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    } else null,
                     label = {
                         Text(
                             when (location) {

@@ -22,12 +22,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lunary.app.R
 import com.lunary.app.domain.model.Letter
 import com.lunary.app.ui.formatDate
@@ -50,6 +52,7 @@ fun LetterRow(
         letter.sender,
         letter.recipient
     )
+    val iconSize = with(LocalDensity.current) { 18.sp.toDp() }
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
@@ -84,7 +87,7 @@ fun LetterRow(
                         Icons.Default.Email,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(iconSize)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(

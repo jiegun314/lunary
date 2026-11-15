@@ -29,8 +29,8 @@ android {
         applicationId = "com.lunary.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 25
-        versionName = "0.9.1"
+        versionCode = 26
+        versionName = "0.9.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
