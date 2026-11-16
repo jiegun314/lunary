@@ -295,6 +295,7 @@
     <string name="editor_hint_attachments">图片、视频或音频，最多 20 个</string>
     <string name="editor_color_option">颜色 %1$d</string>
     <string name="detail_no_note">暂无备注</string>
+    <string name="detail_no_location">暂无地点</string>
 
     <string name="search_letters">搜索标题、正文、发件人或收件人</string>
     <string name="letters_no_results">没有找到符合条件的芳札</string>

@@ -21,7 +21,7 @@ class LunaryNavigationTest {
 
     @Test
     fun bottomNavigation_opensEventsAndSettings() {
-        compose.onNodeWithText("纪念日").performClick()
+        compose.onNode(hasText("纪念日") and hasClickAction()).performClick()
         compose.onNodeWithText("搜索标题、备注、地点").assertExists()
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("外观").assertExists()

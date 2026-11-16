@@ -312,7 +312,7 @@ private fun RestorePreviewDialog(
                 Text("事项 ${archive.eventCount} · 分类 ${archive.categoryCount} · 标签 ${archive.tagCount}")
                 Text("提醒 ${archive.reminderCount} · 芳札 ${archive.letterCount} · 附件 ${archive.attachmentCount}")
                 Text(
-                    "合并恢复会保留本机数据，并把备份内容作为副本导入（标题/名称追加“恢复副本”）；替换会清空本机当前数据。两种方式都会先自动保存当前快照。",
+                    "合并恢复会保留本机数据；同名分类、标签会直接并入本机现有项（保留本机颜色和图标，回收站中的同名项不复用），纪念日与芳札保留原名称。替换会清空本机当前数据。两种方式都会先自动保存当前快照。",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

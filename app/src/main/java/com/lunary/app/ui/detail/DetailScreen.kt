@@ -58,8 +58,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.annotation.StringRes
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -131,17 +134,27 @@ fun DetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    BoxWithConstraints {
-                        val compactTitle = maxWidth < 180.dp
+                    val currentEvent = state.event
+                    if (currentEvent != null) {
                         Text(
-                            stringResource(
-                                when {
-                                    embedded -> R.string.events_title
-                                    compactTitle -> R.string.detail_details
-                                    else -> R.string.detail_title
-                                }
-                            )
+                            text = listOfNotNull(currentEvent.emoji, currentEvent.title)
+                                .joinToString(" "),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                    } else {
+                        BoxWithConstraints {
+                            val compactTitle = maxWidth < 180.dp
+                            Text(
+                                stringResource(
+                                    when {
+                                        embedded -> R.string.events_title
+                                        compactTitle -> R.string.detail_details
+                                        else -> R.string.detail_title
+                                    }
+                                )
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
@@ -261,36 +274,32 @@ fun DetailScreen(
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(20.dp)
                             ) {
-                                Row(verticalAlignment = Alignment.Top) {
-                                    event.emoji?.let { emoji ->
-                                        Text(
-                                            text = emoji,
-                                            style = MaterialTheme.typography.headlineSmall
-                                        )
-                                        Spacer(Modifier.width(10.dp))
-                                    }
-                                    Text(
-                                        text = event.title,
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                val intervalText = intervalLabel(event, state.policy)
+                                val dateText = if (event.dateMode == DateMode.MONTH_DAY) {
+                                    "每年 ${event.date.monthValue}月${event.date.dayOfMonth}日"
+                                } else {
+                                    "${formatDate(event.date)} · ${weekdayLong(event.date.dayOfWeek)}"
                                 }
-                                Spacer(Modifier.height(8.dp))
                                 Text(
-                                    text = if (event.dateMode == DateMode.MONTH_DAY) {
-                                        "每年 ${event.date.monthValue}月${event.date.dayOfMonth}日"
-                                    } else {
-                                        "${formatDate(event.date)} · ${weekdayLong(event.date.dayOfWeek)}"
+                                    text = buildAnnotatedString {
+                                        withStyle(
+                                            SpanStyle(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        ) {
+                                            append(intervalText)
+                                        }
+                                        append("  ")
+                                        withStyle(
+                                            SpanStyle(
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        ) {
+                                            append(dateText)
+                                        }
                                     },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.height(6.dp))
-                                Text(
-                                    text = intervalLabel(event, state.policy),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    style = MaterialTheme.typography.bodyLarge
                                 )
                                 if (state.category != null || event.tags.isNotEmpty()) {
                                     Spacer(Modifier.height(14.dp))
@@ -330,57 +339,43 @@ fun DetailScreen(
                             DetailPrimaryHeader(R.string.detail_details)
 
                             DetailSubsection(R.string.field_note) {
-                                if (event.note.isBlank() && event.location.isBlank()) {
-                                    Text(
-                                        text = stringResource(R.string.detail_no_note),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(16.dp)
-                                    )
+                                if (event.note.isBlank()) {
+                                    DetailEmptyText(R.string.detail_no_note)
                                 } else {
-                                    if (event.note.isNotBlank()) {
-                                        Column(
-                                            Modifier.fillMaxWidth().padding(16.dp)
-                                        ) {
-                                            Text(
-                                                text = event.note,
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                        }
-                                    }
-                                    if (event.note.isNotBlank() && event.location.isNotBlank()) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(start = 16.dp),
-                                            color = MaterialTheme.colorScheme.outlineVariant
+                                    Column(
+                                        Modifier.fillMaxWidth().padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = event.note,
+                                            style = MaterialTheme.typography.bodyLarge
                                         )
                                     }
-                                    if (event.location.isNotBlank()) {
-                                        Column(
-                                            Modifier.fillMaxWidth().padding(16.dp)
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.field_location),
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            }
+
+                            DetailSubsection(R.string.field_location) {
+                                if (event.location.isBlank()) {
+                                    DetailEmptyText(R.string.detail_no_location)
+                                } else {
+                                    Column(
+                                        Modifier.fillMaxWidth().padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = event.location,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        val lat = event.latitude
+                                        val lon = event.longitude
+                                        if (lat != null && lon != null) {
+                                            Spacer(Modifier.height(12.dp))
+                                            com.lunary.app.ui.location.LocationMapPreview(
+                                                latitude = lat,
+                                                longitude = lon,
+                                                title = event.location,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(160.dp)
                                             )
-                                            Spacer(Modifier.height(4.dp))
-                                            Text(
-                                                text = event.location,
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                            val lat = event.latitude
-                                            val lon = event.longitude
-                                            if (lat != null && lon != null) {
-                                                Spacer(Modifier.height(12.dp))
-                                                com.lunary.app.ui.location.LocationMapPreview(
-                                                    latitude = lat,
-                                                    longitude = lon,
-                                                    title = event.location,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(160.dp)
-                                                )
-                                            }
                                         }
                                     }
                                 }
@@ -388,12 +383,7 @@ fun DetailScreen(
 
                             DetailSubsection(R.string.attachments_title) {
                                 if (state.attachments.isEmpty()) {
-                                    Text(
-                                        text = stringResource(R.string.no_attachments),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(16.dp)
-                                    )
+                                    DetailEmptyText(R.string.no_attachments)
                                 } else {
                                     AttachmentGallery(
                                         attachments = state.attachments,
@@ -523,6 +513,16 @@ private fun DetailSubsection(
             Column(Modifier.fillMaxWidth(), content = content)
         }
     }
+}
+
+@Composable
+private fun DetailEmptyText(@StringRes textRes: Int) {
+    Text(
+        text = stringResource(textRes),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(16.dp)
+    )
 }
 
 @Composable

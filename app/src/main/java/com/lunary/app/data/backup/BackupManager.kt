@@ -13,6 +13,8 @@ import com.lunary.app.data.local.dao.LetterDao
 import com.lunary.app.data.local.dao.ReminderDao
 import com.lunary.app.data.local.dao.TagDao
 import com.lunary.app.data.local.entity.EventTagCrossRef
+import com.lunary.app.data.local.entity.CategoryEntity
+import com.lunary.app.data.local.entity.TagEntity
 import com.lunary.app.data.reminder.ReminderScheduler
 import com.lunary.app.data.settings.SettingsRepository
 import com.lunary.app.domain.model.LeapDayPolicy
@@ -267,54 +269,83 @@ class BackupManager @Inject constructor(
             val existingCategories = categoryDao.getAllForBackup()
             val existingTags = tagDao.getAllForBackup()
 
-            var categories = archive.data.categories
-            var tags = archive.data.tags
+            val categories = archive.data.categories
+            val tags = archive.data.tags
             var events = archive.data.events
             var refs = archive.data.eventTags
             var reminders = archive.data.reminders
             var attachments = archive.data.attachments
             var letters = archive.data.letters
+            var categoriesToWrite = categories
+            var tagsToWrite = tags
             val filesToWrite = mutableMapOf<String, String>()
 
             if (mode == RestoreMode.MERGE) {
                 val catMap = mutableMapOf<String, String>()
-                val usedCatIds = existingCategories.map { it.id }.toMutableSet()
-                val usedCatNames = existingCategories.map { it.name }.toMutableSet()
-                categories = categories.map { cat ->
-                    val conflict = cat.id in usedCatIds || cat.name in usedCatNames
-                    val id = if (conflict) UUID.randomUUID().toString() else cat.id
-                    if (conflict) {
-                        usedCatIds += id
-                        usedCatNames += cat.name + "（恢复副本）"
-                        cat.copy(id = id, name = cat.name + "（恢复副本）", updatedAt = clock.millis())
-                    } else {
-                        usedCatIds += id
-                        usedCatNames += cat.name
-                        cat
-                    }.also { catMap[cat.id] = id }
+                val activeCatByName = existingCategories
+                    .asSequence()
+                    .filter { it.deletedAt == null }
+                    .associateBy { it.name }
+                    .toMutableMap()
+                val usedCatIds = existingCategories.mapTo(mutableSetOf()) { it.id }
+                val newCategories = mutableListOf<CategoryEntity>()
+                categories.forEach { cat ->
+                    val existing = activeCatByName[cat.name]
+                    when {
+                        existing != null -> catMap[cat.id] = existing.id
+                        cat.id in usedCatIds -> {
+                            val newId = UUID.randomUUID().toString()
+                            val copy = cat.copy(id = newId, updatedAt = clock.millis())
+                            catMap[cat.id] = newId
+                            usedCatIds += newId
+                            if (copy.deletedAt == null) activeCatByName[cat.name] = copy
+                            newCategories += copy
+                        }
+                        else -> {
+                            catMap[cat.id] = cat.id
+                            usedCatIds += cat.id
+                            if (cat.deletedAt == null) activeCatByName[cat.name] = cat
+                            newCategories += cat
+                        }
+                    }
                 }
+                categoriesToWrite = newCategories
+
                 val tagMap = mutableMapOf<String, String>()
-                val usedTagIds = existingTags.map { it.id }.toMutableSet()
-                val usedTagNames = existingTags.map { it.name }.toMutableSet()
-                tags = tags.map { tag ->
-                    val conflict = tag.id in usedTagIds || tag.name in usedTagNames
-                    val id = if (conflict) UUID.randomUUID().toString() else tag.id
-                    if (conflict) {
-                        usedTagIds += id
-                        usedTagNames += tag.name + "（恢复副本）"
-                        tag.copy(id = id, name = tag.name + "（恢复副本）", updatedAt = clock.millis())
-                    } else {
-                        usedTagIds += id
-                        usedTagNames += tag.name
-                        tag
-                    }.also { tagMap[tag.id] = id }
+                val activeTagByName = existingTags
+                    .asSequence()
+                    .filter { it.deletedAt == null }
+                    .associateBy { it.name }
+                    .toMutableMap()
+                val usedTagIds = existingTags.mapTo(mutableSetOf()) { it.id }
+                val newTags = mutableListOf<TagEntity>()
+                tags.forEach { tag ->
+                    val existing = activeTagByName[tag.name]
+                    when {
+                        existing != null -> tagMap[tag.id] = existing.id
+                        tag.id in usedTagIds -> {
+                            val newId = UUID.randomUUID().toString()
+                            val copy = tag.copy(id = newId, updatedAt = clock.millis())
+                            tagMap[tag.id] = newId
+                            usedTagIds += newId
+                            if (copy.deletedAt == null) activeTagByName[tag.name] = copy
+                            newTags += copy
+                        }
+                        else -> {
+                            tagMap[tag.id] = tag.id
+                            usedTagIds += tag.id
+                            if (tag.deletedAt == null) activeTagByName[tag.name] = tag
+                            newTags += tag
+                        }
+                    }
                 }
+                tagsToWrite = newTags
+
                 val eventMap = mutableMapOf<String, String>()
                 events = events.map { event ->
                     val id = UUID.randomUUID().toString()
                     val copied = event.copy(
                         id = id,
-                        title = event.title + "（恢复副本）",
                         categoryId = event.categoryId?.let { catMap[it] },
                         updatedAt = clock.millis()
                     )
@@ -336,7 +367,6 @@ class BackupManager @Inject constructor(
                 letters = letters.map { letter ->
                     letter.copy(
                         id = UUID.randomUUID().toString(),
-                        subject = letter.subject + "（恢复副本）",
                         updatedAt = clock.millis()
                     )
                 }
@@ -380,8 +410,8 @@ class BackupManager @Inject constructor(
                     categoryDao.deleteAll()
                     tagDao.deleteAll()
                 }
-                categories.forEach { categoryDao.upsert(it) }
-                tags.forEach { tagDao.upsert(it) }
+                categoriesToWrite.forEach { categoryDao.upsert(it) }
+                tagsToWrite.forEach { tagDao.upsert(it) }
                 events.forEach { eventDao.upsert(it) }
                 if (refs.isNotEmpty()) eventTagDao.insertAll(refs)
                 reminders.forEach { reminderDao.upsert(it) }
