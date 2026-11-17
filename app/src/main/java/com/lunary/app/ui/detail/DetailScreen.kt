@@ -61,6 +61,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -280,54 +281,71 @@ fun DetailScreen(
                                 } else {
                                     "${formatDate(event.date)} · ${weekdayLong(event.date.dayOfWeek)}"
                                 }
-                                Text(
-                                    text = buildAnnotatedString {
-                                        withStyle(
-                                            SpanStyle(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        ) {
-                                            append(intervalText)
-                                        }
-                                        append("  ")
-                                        withStyle(
-                                            SpanStyle(
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        ) {
-                                            append(dateText)
-                                        }
-                                    },
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Text(
+                                        text = intervalText,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 2,
+                                        modifier = Modifier.widthIn(max = 160.dp)
+                                    )
+                                    Text(
+                                        text = dateText,
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.End
+                                    )
+                                }
                                 if (state.category != null || event.tags.isNotEmpty()) {
                                     Spacer(Modifier.height(14.dp))
-                                    if (state.category != null) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(8.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color(state.category!!.colorArgb))
-                                            )
-                                            Text(
-                                                text = state.category!!.name,
-                                                modifier = Modifier.padding(start = 8.dp),
-                                                style = MaterialTheme.typography.labelLarge
-                                            )
-                                        }
-                                    }
-                                    if (event.tags.isNotEmpty()) {
-                                        if (state.category != null) Spacer(Modifier.height(8.dp))
-                                        FlowRow(
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            event.tags.forEach { tag ->
-                                                DetailTag(
-                                                    text = listOfNotNull(tag.emoji, tag.name)
-                                                        .joinToString(" ")
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        if (state.category != null) {
+                                            Row(
+                                                modifier = Modifier.widthIn(max = 160.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(state.category!!.colorArgb))
                                                 )
+                                                Text(
+                                                    text = state.category!!.name,
+                                                    modifier = Modifier.padding(start = 8.dp),
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                        if (event.tags.isNotEmpty()) {
+                                            if (state.category != null) {
+                                                Spacer(Modifier.width(12.dp))
+                                            }
+                                            FlowRow(
+                                                modifier = Modifier.weight(1f),
+                                                horizontalArrangement = Arrangement.spacedBy(
+                                                    6.dp,
+                                                    Alignment.End
+                                                ),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                event.tags.forEach { tag ->
+                                                    DetailTag(
+                                                        text = listOfNotNull(tag.emoji, tag.name)
+                                                            .joinToString(" ")
+                                                    )
+                                                }
                                             }
                                         }
                                     }

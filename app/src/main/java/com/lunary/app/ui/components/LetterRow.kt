@@ -22,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -34,6 +37,22 @@ import com.lunary.app.R
 import com.lunary.app.domain.model.Letter
 import com.lunary.app.ui.formatDate
 import com.lunary.app.ui.formatTime
+
+/** Lavender card tint, kept distinct from the neutral event cards in both themes. */
+@Composable
+fun letterCardColor(): Color {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val base = if (dark) {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    }
+    return lerp(
+        base,
+        MaterialTheme.colorScheme.primaryContainer,
+        if (dark) 0.45f else 0.35f
+    )
+}
 
 @Composable
 fun LetterRow(
@@ -56,7 +75,7 @@ fun LetterRow(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        color = letterCardColor(),
         modifier = modifier.fillMaxWidth()
     ) {
         Row(

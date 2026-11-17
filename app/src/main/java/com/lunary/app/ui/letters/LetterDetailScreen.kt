@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunary.app.R
+import com.lunary.app.ui.components.letterCardColor
 import com.lunary.app.ui.formatDate
 import com.lunary.app.ui.formatTime
 import com.lunary.app.ui.weekdayLong
@@ -101,7 +102,7 @@ fun LetterDetailScreen(
                 ) {
                     Surface(
                         shape = MaterialTheme.shapes.large,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = letterCardColor(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(Modifier.padding(20.dp)) {
