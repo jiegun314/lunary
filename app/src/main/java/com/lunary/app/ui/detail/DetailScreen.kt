@@ -2,6 +2,7 @@ package com.lunary.app.ui.detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -18,9 +19,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -64,14 +68,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.annotation.StringRes
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunary.app.R
+import com.lunary.app.domain.date.eventDayMetric
 import com.lunary.app.domain.model.DateMode
+import com.lunary.app.ui.components.EventDayMetricBlock
+import com.lunary.app.ui.components.eventCardContainerColor
 import com.lunary.app.ui.formatDate
-import com.lunary.app.ui.intervalLabel
 import com.lunary.app.ui.weekdayLong
 import android.Manifest
 import android.content.pm.PackageManager
@@ -267,45 +274,70 @@ fun DetailScreen(
                             .padding(horizontal = 16.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
+                        val metric = eventDayMetric(event, state.policy)
+                        val dateText = if (event.dateMode == DateMode.MONTH_DAY) {
+                            "每年 ${event.date.monthValue}月${event.date.dayOfMonth}日"
+                        } else {
+                            "${formatDate(event.date)} · " +
+                                weekdayLong(event.date.dayOfWeek)
+                        }
                         Surface(
                             shape = MaterialTheme.shapes.large,
-                            color = Color(event.colorArgb).copy(alpha = 0.14f),
+                            color = eventCardContainerColor(metric.isPast),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(20.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp)
                             ) {
-                                val intervalText = intervalLabel(event, state.policy)
-                                val dateText = if (event.dateMode == DateMode.MONTH_DAY) {
-                                    "每年 ${event.date.monthValue}月${event.date.dayOfMonth}日"
-                                } else {
-                                    "${formatDate(event.date)} · ${weekdayLong(event.date.dayOfWeek)}"
-                                }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
-                                    Text(
-                                        text = intervalText,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Medium,
-                                        maxLines = 2,
-                                        modifier = Modifier.widthIn(max = 160.dp)
-                                    )
-                                    Text(
+                                    Row(
+                                        modifier = Modifier.height(IntrinsicSize.Min),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(4.dp)
+                                                .fillMaxHeight()
+                                                .clip(RoundedCornerShape(2.dp))
+                                                .background(Color(event.colorArgb))
+                                        )
+                                        Spacer(Modifier.width(12.dp))
+                                        EventDayMetricBlock(
+                                            metric = metric,
+                                            compact = false,
+                                            modifier = Modifier.widthIn(
+                                                min = 112.dp,
+                                                max = 160.dp
+                                            )
+                                        )
+                                    }
+                                    Spacer(Modifier.width(16.dp))
+                                    BasicText(
                                         text = dateText,
                                         modifier = Modifier.weight(1f),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.End
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.End
+                                        ),
+                                        maxLines = 1,
+                                        autoSize = TextAutoSize.StepBased(
+                                            minFontSize = 7.sp,
+                                            maxFontSize = 16.sp,
+                                            stepSize = 0.5.sp
+                                        )
                                     )
                                 }
                                 if (state.category != null || event.tags.isNotEmpty()) {
                                     Spacer(Modifier.height(14.dp))
                                     Row(
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 16.dp),
                                         verticalAlignment = Alignment.Top
                                     ) {
                                         if (state.category != null) {
@@ -317,7 +349,9 @@ fun DetailScreen(
                                                     modifier = Modifier
                                                         .size(8.dp)
                                                         .clip(CircleShape)
-                                                        .background(Color(state.category!!.colorArgb))
+                                                        .background(
+                                                            Color(state.category!!.colorArgb)
+                                                        )
                                                 )
                                                 Text(
                                                     text = state.category!!.name,

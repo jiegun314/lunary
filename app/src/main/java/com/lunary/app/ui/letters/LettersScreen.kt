@@ -1,6 +1,7 @@
 package com.lunary.app.ui.letters
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -57,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -364,16 +368,26 @@ private fun LetterFilterSheet(
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
-            Column {
+            Row(
+                modifier = Modifier.height(IntrinsicSize.Min),
+                verticalAlignment = Alignment.Top
+            ) {
                 DateFilterRow(
-                    label = stringResource(R.string.filter_start_date),
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(R.string.filter_start_short),
                     date = filter.startDate,
                     onClick = onPickStart,
                     onClear = { onStartDate(null) }
                 )
-                HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
                 DateFilterRow(
-                    label = stringResource(R.string.filter_end_date),
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(R.string.filter_end_short),
                     date = filter.endDate,
                     onClick = onPickEnd,
                     onClear = { onEndDate(null) }
@@ -383,31 +397,28 @@ private fun LetterFilterSheet(
 
         HorizontalDivider()
 
-        Text(
-            text = stringResource(R.string.letter_sender),
-            style = MaterialTheme.typography.titleSmall
-        )
-        OutlinedTextField(
-            value = filter.sender,
-            onValueChange = onSender,
-            label = { Text(stringResource(R.string.filter_contains)) },
-            placeholder = { Text(stringResource(R.string.filter_sender_hint)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Text(
-            text = stringResource(R.string.letter_recipient),
-            style = MaterialTheme.typography.titleSmall
-        )
-        OutlinedTextField(
-            value = filter.recipient,
-            onValueChange = onRecipient,
-            label = { Text(stringResource(R.string.filter_contains)) },
-            placeholder = { Text(stringResource(R.string.filter_recipient_hint)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            OutlinedTextField(
+                value = filter.sender,
+                onValueChange = onSender,
+                label = { Text(stringResource(R.string.letter_sender)) },
+                placeholder = { Text(stringResource(R.string.filter_keyword)) },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            OutlinedTextField(
+                value = filter.recipient,
+                onValueChange = onRecipient,
+                label = { Text(stringResource(R.string.letter_recipient)) },
+                placeholder = { Text(stringResource(R.string.filter_keyword)) },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -426,45 +437,58 @@ private fun LetterFilterSheet(
 
 @Composable
 private fun DateFilterRow(
+    modifier: Modifier = Modifier,
     label: String,
     date: LocalDate?,
     onClick: () -> Unit,
     onClear: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
+    Column(
+        modifier = modifier
+            .heightIn(min = 64.dp)
             .clip(MaterialTheme.shapes.medium)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
-        Icon(
-            Icons.Default.DateRange,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.size(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.DateRange,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(6.dp))
             Text(
                 text = label,
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = date?.let(::formatDate) ?: stringResource(R.string.filter_any_date),
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-        if (date != null) {
-            IconButton(onClick = onClear) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = stringResource(R.string.filter_clear_date)
-                )
+            if (date != null) {
+                IconButton(
+                    onClick = onClear,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.filter_clear_date),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = date?.let(::formatDate) ?: stringResource(R.string.filter_any_date),
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

@@ -110,9 +110,12 @@
     <string name="attachment_open_external">用其他应用打开</string>
     <string name="delete_confirm_message">「%1$s」将被移入回收站，30 天后自动清理。</string>
     <string name="interval_today">就是今天</string>
-    <string name="interval_future">还有 %1$d 天</string>
-    <string name="interval_past">已经 %1$d 天</string>
     <string name="anniversary_years">第 %1$d 周年</string>
+    <string name="metric_future">还差</string>
+    <string name="metric_past">已过</string>
+    <string name="metric_year_unit">年</string>
+    <string name="metric_day_unit">天</string>
+    <string name="metric_total_days">共 %1$d 天</string>
     <string name="date_with_weekday">%1$d年%2$d月%3$d日 · %4$s</string>
 
     <string name="settings_appearance">外观</string>
@@ -306,12 +309,12 @@
     <string name="filter_last_30_days">最近 30 天</string>
     <string name="filter_this_year">今年</string>
     <string name="filter_start_date">开始日期</string>
+    <string name="filter_start_short">开始</string>
     <string name="filter_end_date">结束日期</string>
+    <string name="filter_end_short">结束</string>
     <string name="filter_any_date">不限</string>
-    <string name="filter_contains">包含关键词</string>
+    <string name="filter_keyword">关键词</string>
     <string name="filter_clear_date">清除日期</string>
-    <string name="filter_sender_hint">输入发件人姓名</string>
-    <string name="filter_recipient_hint">输入收件人姓名</string>
     <string name="letters_empty_title">还没有芳札</string>
     <string name="letters_empty_hint">点击右下角的加号，写下第一封信</string>
     <string name="letter_title_new">新建芳札</string>
