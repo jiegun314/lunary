@@ -128,6 +128,10 @@ fun EditorScreen(
     var showLocationPicker by remember { mutableStateOf(false) }
     var showEmojiPicker by remember { mutableStateOf(false) }
     val selectedEmoji = form.emoji
+    val emojiAction = stringResource(
+        if (selectedEmoji == null) R.string.editor_emoji_add
+        else R.string.editor_emoji_change
+    )
     val hasTitleText = form.title.isNotBlank()
 
     fun applyEmoji(emoji: String?) {
@@ -148,39 +152,16 @@ fun EditorScreen(
                 title = {
                     BoxWithConstraints {
                         val compactTitle = maxWidth < 200.dp
-                        val emojiAction = stringResource(
-                            if (selectedEmoji == null) R.string.editor_emoji_add
-                            else R.string.editor_emoji_change
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
-                                onClick = { showEmojiPicker = true },
-                                modifier = Modifier.semantics {
-                                    contentDescription = emojiAction
+                        Text(
+                            stringResource(
+                                when {
+                                    viewModel.isEditing && compactTitle -> R.string.editor_title_edit_short
+                                    viewModel.isEditing -> R.string.editor_title_edit
+                                    compactTitle -> R.string.editor_title_new_short
+                                    else -> R.string.editor_title_new
                                 }
-                            ) {
-                                if (selectedEmoji != null) {
-                                    Text(selectedEmoji, fontSize = 22.sp)
-                                } else {
-                                    Icon(
-                                        Icons.Default.Face,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                stringResource(
-                                    when {
-                                        viewModel.isEditing && compactTitle -> R.string.editor_title_edit_short
-                                        viewModel.isEditing -> R.string.editor_title_edit
-                                        compactTitle -> R.string.editor_title_new_short
-                                        else -> R.string.editor_title_new
-                                    }
-                                )
                             )
-                        }
+                        )
                     }
                 },
                 navigationIcon = {
@@ -239,6 +220,24 @@ fun EditorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.field_title)) },
                     placeholder = { Text(stringResource(R.string.hint_title)) },
+                    leadingIcon = {
+                        IconButton(
+                            onClick = { showEmojiPicker = true },
+                            modifier = Modifier.semantics {
+                                contentDescription = emojiAction
+                            }
+                        ) {
+                            if (selectedEmoji != null) {
+                                Text(selectedEmoji, fontSize = 22.sp)
+                            } else {
+                                Icon(
+                                    Icons.Default.Face,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
                     isError = titleError,
                     supportingText = {
                         Text(

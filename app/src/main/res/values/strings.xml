@@ -359,5 +359,5 @@
     <string name="editor_emoji_change">更换 emoji</string>
     <string name="editor_emoji_picker_title">选择 emoji</string>
     <string name="editor_emoji_remove">移除 emoji</string>
-    <string name="editor_emoji_hint">可选，只选择一个；会作为独立标签显示在标题前</string>
+    <string name="editor_emoji_hint">可选，只选择一个；会作为独立标签显示在标题前，可上下滑动浏览</string>
 </resources>
