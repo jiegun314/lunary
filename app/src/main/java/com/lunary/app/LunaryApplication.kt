@@ -6,8 +6,8 @@ import androidx.work.Configuration as WorkConfiguration
 import androidx.work.WorkManager
 import com.lunary.app.data.backup.AutoBackupScheduler
 import com.lunary.app.data.backup.AutoBackupWorker
-import org.osmdroid.config.Configuration
-import java.io.File
+import com.amap.api.maps.MapsInitializer
+import com.amap.api.services.core.ServiceSettings
 import com.lunary.app.data.reminder.ReminderReceiver
 import com.lunary.app.data.attachment.AttachmentStore
 import com.lunary.app.data.reminder.ReminderScheduler
@@ -45,9 +45,14 @@ class LunaryApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Configuration.getInstance().userAgentValue = packageName
-        Configuration.getInstance().osmdroidBasePath = File(cacheDir, "osmdroid")
-        Configuration.getInstance().osmdroidTileCache = File(cacheDir, "osmdroid/tiles")
+        MapsInitializer.updatePrivacyShow(this, true, true)
+        MapsInitializer.updatePrivacyAgree(this, true)
+        ServiceSettings.updatePrivacyShow(this, true, true)
+        ServiceSettings.updatePrivacyAgree(this, true)
+        if (BuildConfig.AMAP_API_KEY.isNotBlank()) {
+            MapsInitializer.setApiKey(BuildConfig.AMAP_API_KEY)
+            ServiceSettings.getInstance().setApiKey(BuildConfig.AMAP_API_KEY)
+        }
         WorkManager.initialize(
             this,
             WorkConfiguration.Builder().setWorkerFactory(workerFactory).build()

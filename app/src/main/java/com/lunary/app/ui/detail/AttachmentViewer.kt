@@ -1,7 +1,6 @@
 package com.lunary.app.ui.detail
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color as AndroidColor
 import android.graphics.drawable.ColorDrawable
 import android.media.MediaPlayer
@@ -676,23 +675,8 @@ private sealed interface ImageLoadState {
     data object Failed : ImageLoadState
 }
 
-private fun decodeBoundedImage(file: File, maxDimension: Int = 2048): Bitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(file.path, bounds)
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-
-    var sampleSize = 1
-    while (
-        bounds.outWidth / (sampleSize * 2) >= maxDimension ||
-        bounds.outHeight / (sampleSize * 2) >= maxDimension
-    ) {
-        sampleSize *= 2
-    }
-    return BitmapFactory.decodeFile(
-        file.path,
-        BitmapFactory.Options().apply { inSampleSize = sampleSize }
-    )
-}
+private fun decodeBoundedImage(file: File, maxDimension: Int = 2048): Bitmap? =
+    decodeOrientedBoundedImage(file, maxDimension)
 
 private fun formatPlaybackTime(milliseconds: Int): String {
     val totalSeconds = (milliseconds.coerceAtLeast(0) / 1000)

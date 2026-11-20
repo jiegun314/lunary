@@ -1,6 +1,9 @@
+@file:Suppress("DEPRECATION")
+
 package com.lunary.app.ui.location
 
 import android.content.Context
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -35,33 +36,39 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.amap.api.maps.AMap
+import com.amap.api.maps.CameraUpdateFactory
+import com.amap.api.maps.MapView
+import com.amap.api.maps.model.LatLng
+import com.amap.api.maps.model.Marker
+import com.amap.api.maps.model.MarkerOptions
+import com.amap.api.services.core.AMapException
+import com.amap.api.services.core.LatLonPoint
+import com.amap.api.services.core.PoiItem
+import com.amap.api.services.geocoder.GeocodeSearch
+import com.amap.api.services.geocoder.RegeocodeQuery
+import com.amap.api.services.geocoder.RegeocodeResult
+import com.amap.api.services.poisearch.PoiResult
+import com.amap.api.services.poisearch.PoiSearch
+import com.lunary.app.BuildConfig
 import com.lunary.app.domain.model.PickedLocation
-import java.net.URLEncoder
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.osmdroid.events.MapEventsReceiver
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.MapEventsOverlay
-import org.osmdroid.views.overlay.Marker
 
-private const val NOMINATIM = "https://nominatim.openstreetmap.org"
-private const val USER_AGENT = "Lunary/0.6.2 (Android)"
+private val CHINA_CENTER = LatLng(35.8617, 104.1954)
+private const val CHINA_ZOOM = 4.5f
+private const val SELECTED_ZOOM = 16f
+private val AMAP_KEY_CONFIGURED = BuildConfig.AMAP_API_KEY.isNotBlank()
 
 private data class PlaceResult(
     val name: String,
@@ -78,91 +85,152 @@ fun LocationPickerDialog(
     onConfirm: (PickedLocation) -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<PlaceResult>>(emptyList()) }
     var selected by remember { mutableStateOf(initial) }
     var searching by remember { mutableStateOf(false) }
     var reverseLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var marker by remember { mutableStateOf<Marker?>(null) }
+    var geocodeSearch by remember { mutableStateOf<GeocodeSearch?>(null) }
+    var poiSearch by remember { mutableStateOf<PoiSearch?>(null) }
 
-    val mapView = remember {
-        MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
-            setMultiTouchControls(true)
-            controller.setZoom(initial?.let { 15.0 } ?: 4.5)
-            controller.setCenter(
-                initial?.let { GeoPoint(it.latitude, it.longitude) }
-                    ?: GeoPoint(35.8617, 104.1954)
-            )
-        }
-    }
-    val marker = remember {
-        Marker(mapView).apply {
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            isEnabled = true
-        }
+    val mapView = remember(context) {
+        if (AMAP_KEY_CONFIGURED) createMapView(context) else null
     }
 
     fun applySelection(place: PickedLocation) {
         selected = place
-        val point = GeoPoint(place.latitude, place.longitude)
-        marker.position = point
-        marker.title = place.name
-        marker.snippet = place.address
-        if (!mapView.overlays.contains(marker)) mapView.overlays.add(marker)
-        mapView.controller.animateTo(point)
-        mapView.controller.setZoom(16.0)
-        mapView.invalidate()
+        val map = mapView?.map ?: return
+        marker?.remove()
+        marker = map.addMarker(
+            MarkerOptions()
+                .position(LatLng(place.latitude, place.longitude))
+                .title(place.name)
+                .snippet(place.address)
+        )
+        map.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(place.latitude, place.longitude),
+                SELECTED_ZOOM
+            )
+        )
     }
 
-    fun reverse(point: GeoPoint) {
+    fun reverse(latLng: LatLng) {
         val provisional = PickedLocation(
             name = "地图选点",
-            address = "%.5f, %.5f".format(point.latitude, point.longitude),
-            latitude = point.latitude,
-            longitude = point.longitude
+            address = "%.5f, %.5f".format(latLng.latitude, latLng.longitude),
+            latitude = latLng.latitude,
+            longitude = latLng.longitude
         )
         applySelection(provisional)
+        if (!AMAP_KEY_CONFIGURED) return
         reverseLoading = true
-        scope.launch {
-            val resolved = withContext(Dispatchers.IO) { reverseGeocode(point) }
+        val search = runCatching { GeocodeSearch(context) }.getOrNull()
+        if (search == null) {
             reverseLoading = false
-            if (resolved != null) applySelection(resolved)
+            error = "地址解析不可用，请稍后重试"
+            return
         }
+        geocodeSearch = search
+        search.setOnGeocodeSearchListener(object : GeocodeSearch.OnGeocodeSearchListener {
+            override fun onRegeocodeSearched(result: RegeocodeResult?, code: Int) {
+                reverseLoading = false
+                if (code != AMapException.CODE_AMAP_SUCCESS) {
+                    error = "地址解析失败（$code）"
+                    return
+                }
+                val address = result?.regeocodeAddress ?: return
+                val formatted = address.formatAddress.orEmpty()
+                val name = address.pois?.firstOrNull()?.title?.takeIf { it.isNotBlank() }
+                    ?: address.building?.takeIf { it.isNotBlank() }
+                    ?: address.neighborhood?.takeIf { it.isNotBlank() }
+                    ?: formatted.substringBefore(",").takeIf { it.isNotBlank() }
+                    ?: "地图选点"
+                val display = formatted.ifBlank {
+                    "%.5f, %.5f".format(provisional.latitude, provisional.longitude)
+                }
+                applySelection(
+                    PickedLocation(
+                        name = name,
+                        address = display,
+                        latitude = provisional.latitude,
+                        longitude = provisional.longitude
+                    )
+                )
+                error = null
+            }
+
+            override fun onGeocodeSearched(result: com.amap.api.services.geocoder.GeocodeResult?, code: Int) = Unit
+        })
+        search.getFromLocationAsyn(
+            RegeocodeQuery(
+                LatLonPoint(provisional.latitude, provisional.longitude),
+                200f,
+                GeocodeSearch.AMAP
+            )
+        )
     }
 
     DisposableEffect(mapView) {
-        mapView.onResume()
+        mapView?.onResume()
         onDispose {
-            mapView.onPause()
-            mapView.onDetach()
+            mapView?.onPause()
+            mapView?.onDestroy()
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (initial != null) applySelection(initial)
-        mapView.overlays.add(MapEventsOverlay(object : MapEventsReceiver {
-            override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
-                reverse(p)
-                return true
-            }
-
-            override fun longPressHelper(p: GeoPoint): Boolean = false
-        }))
+    LaunchedEffect(mapView) {
+        val map = mapView?.map ?: return@LaunchedEffect
+        map.uiSettings.apply {
+            setZoomControlsEnabled(false)
+            setCompassEnabled(false)
+            setRotateGesturesEnabled(false)
+            setTiltGesturesEnabled(false)
+            setMyLocationButtonEnabled(false)
+        }
+        map.setOnMapClickListener { latLng -> reverse(latLng) }
+        val start = initial?.let { LatLng(it.latitude, it.longitude) } ?: CHINA_CENTER
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(start, initial?.let { SELECTED_ZOOM } ?: CHINA_ZOOM))
+        initial?.let(::applySelection)
     }
 
     fun search() {
         val q = query.trim()
         if (q.isEmpty() || searching) return
+        if (!AMAP_KEY_CONFIGURED) {
+            error = "请先在 local.properties 配置 amap.api.key"
+            return
+        }
         searching = true
         error = null
-        scope.launch {
-            val found = withContext(Dispatchers.IO) { searchPlaces(q) }
-            searching = false
-            results = found
-            if (found.isEmpty()) error = "没有找到地点，试试更具体的关键词"
+        val poiQuery = PoiSearch.Query(q, "", "全国").apply {
+            setPageSize(8)
+            setCityLimit(false)
         }
+        val search = runCatching { PoiSearch(context, poiQuery) }.getOrNull()
+        if (search == null) {
+            searching = false
+            error = "地点搜索不可用，请稍后重试"
+            return
+        }
+        poiSearch = search
+        search.setOnPoiSearchListener(object : PoiSearch.OnPoiSearchListener {
+            override fun onPoiSearched(result: PoiResult?, code: Int) {
+                searching = false
+                if (code != AMapException.CODE_AMAP_SUCCESS) {
+                    results = emptyList()
+                    error = "没有找到地点（$code），试试更具体的关键词"
+                    return
+                }
+                results = result?.pois?.mapNotNull { it.toPlaceResult() }.orEmpty()
+                if (results.isEmpty()) error = "没有找到地点，试试更具体的关键词"
+            }
+
+            override fun onPoiItemSearched(item: PoiItem?, code: Int) = Unit
+        })
+        search.searchPOIAsyn()
     }
 
     Dialog(
@@ -171,6 +239,17 @@ fun LocationPickerDialog(
     ) {
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize()) {
+                val focusManager = LocalFocusManager.current
+                val keyboard = LocalSoftwareKeyboardController.current
+                val view = LocalView.current
+                val imm = remember(context) {
+                    context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                }
+                fun hideKeyboard() {
+                    focusManager.clearFocus(force = true)
+                    keyboard?.hide()
+                    imm.hideSoftInputFromWindow(view.rootView.windowToken, 0)
+                }
                 TopAppBar(
                     title = { Text("选择地点") },
                     navigationIcon = {
@@ -198,8 +277,11 @@ fun LocationPickerDialog(
                         }
                     )
                     Button(
-                        onClick = ::search,
-                        enabled = query.isNotBlank() && !searching
+                        onClick = {
+                            hideKeyboard()
+                            search()
+                        },
+                        enabled = query.isNotBlank() && !searching && AMAP_KEY_CONFIGURED
                     ) { Text("搜索") }
                 }
                 if (results.isNotEmpty()) {
@@ -217,6 +299,7 @@ fun LocationPickerDialog(
                                     Modifier
                                         .fillMaxWidth()
                                         .clickable {
+                                            hideKeyboard()
                                             applySelection(
                                                 PickedLocation(
                                                     name = result.name,
@@ -226,6 +309,7 @@ fun LocationPickerDialog(
                                                 )
                                             )
                                             results = emptyList()
+                                            error = null
                                         }
                                         .padding(12.dp)
                                 ) {
@@ -249,11 +333,25 @@ fun LocationPickerDialog(
                         .padding(horizontal = 16.dp)
                         .clip(RoundedCornerShape(16.dp))
                 ) {
-                    AndroidView(
-                        factory = { mapView },
-                        modifier = Modifier.fillMaxSize(),
-                        update = { it.invalidate() }
-                    )
+                    if (mapView != null) {
+                        AndroidView(
+                            factory = { mapView },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "未配置高德地图 Key\n请在 local.properties 添加 amap.api.key",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                     if (reverseLoading) {
                         CircularProgressIndicator(
                             Modifier.align(Alignment.TopEnd).padding(12.dp).size(24.dp),
@@ -303,7 +401,7 @@ fun LocationPickerDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        "点击地图可重新选点",
+                        if (AMAP_KEY_CONFIGURED) "点击地图可重新选点" else "配置 Key 后可在地图上选点",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f).align(Alignment.CenterVertically)
@@ -326,90 +424,78 @@ fun LocationMapPreview(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val mapView = remember {
-        MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
-            setMultiTouchControls(false)
-            setBuiltInZoomControls(false)
-            controller.setZoom(15.0)
-            controller.setCenter(GeoPoint(latitude, longitude))
+    if (!AMAP_KEY_CONFIGURED) {
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "地图未配置高德 Key",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        return
+    }
+    val mapView = remember(context) {
+        createMapView(context).apply {
+            map.uiSettings.apply {
+                setZoomControlsEnabled(false)
+                setCompassEnabled(false)
+                setRotateGesturesEnabled(false)
+                setTiltGesturesEnabled(false)
+                setMyLocationButtonEnabled(false)
+                setScrollGesturesEnabled(false)
+                setZoomGesturesEnabled(false)
+            }
         }
     }
-    val marker = remember {
-        Marker(mapView).apply {
-            position = GeoPoint(latitude, longitude)
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            this.title = title
-            isEnabled = true
-        }
-    }
+    var marker by remember { mutableStateOf<Marker?>(null) }
     DisposableEffect(mapView) {
         mapView.onResume()
-        mapView.overlays.add(marker)
         onDispose {
             mapView.onPause()
-            mapView.onDetach()
+            mapView.onDestroy()
         }
+    }
+    LaunchedEffect(latitude, longitude, title) {
+        val map = mapView.map
+        marker?.remove()
+        marker = map.addMarker(
+            MarkerOptions()
+                .position(LatLng(latitude, longitude))
+                .title(title)
+        )
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(latitude, longitude), 15f))
     }
     AndroidView(
         factory = { mapView },
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
-        update = {
-            marker.position = GeoPoint(latitude, longitude)
-            it.controller.setCenter(GeoPoint(latitude, longitude))
-            it.invalidate()
-        }
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
     )
 }
 
-private fun searchPlaces(query: String): List<PlaceResult> {
-    val encoded = URLEncoder.encode(query, "UTF-8")
-    val url = "$NOMINATIM/search?format=jsonv2&limit=6&accept-language=zh-CN&q=$encoded"
-    val json = httpGet(url) ?: return emptyList()
-    return runCatching {
-        val array = JSONArray(json)
-        (0 until array.length()).mapNotNull { index ->
-            val obj = array.optJSONObject(index) ?: return@mapNotNull null
-            val display = obj.optString("display_name").ifBlank { obj.optString("name") }
-            val name = obj.optString("name").ifBlank { display.substringBefore(",") }
-            PlaceResult(
-                name = name.ifBlank { "地点" },
-                address = display,
-                latitude = obj.optString("lat").toDoubleOrNull() ?: return@mapNotNull null,
-                longitude = obj.optString("lon").toDoubleOrNull() ?: return@mapNotNull null
-            )
-        }
-    }.getOrDefault(emptyList())
-}
-
-private fun reverseGeocode(point: GeoPoint): PickedLocation? {
-    val url = "$NOMINATIM/reverse?format=jsonv2&zoom=18&accept-language=zh-CN&lat=${point.latitude}&lon=${point.longitude}"
-    val json = httpGet(url) ?: return null
-    return runCatching {
-        val obj = org.json.JSONObject(json)
-        val display = obj.optString("display_name")
-        if (display.isBlank()) return null
-        val name = obj.optString("name").ifBlank { display.substringBefore(",") }
-        PickedLocation(name, display, point.latitude, point.longitude)
-    }.getOrNull()
-}
-
-private fun httpGet(url: String): String? {
-    var connection: HttpURLConnection? = null
-    return try {
-        connection = URL(url).openConnection() as HttpURLConnection
-        connection.requestMethod = "GET"
-        connection.connectTimeout = 10_000
-        connection.readTimeout = 15_000
-        connection.setRequestProperty("User-Agent", USER_AGENT)
-        connection.setRequestProperty("Accept", "application/json")
-        if (connection.responseCode !in 200..299) return null
-        connection.inputStream.bufferedReader().use { it.readText() }
-    } catch (_: Exception) {
-        null
-    } finally {
-        connection?.disconnect()
+private fun createMapView(context: Context): MapView {
+    return MapView(context).apply {
+        onCreate(null)
+        map.mapType = AMap.MAP_TYPE_NORMAL
     }
+}
+
+private fun PoiItem.toPlaceResult(): PlaceResult? {
+    val point = latLonPoint ?: return null
+    val address = snippet?.takeIf { it.isNotBlank() } ?: listOfNotNull(
+        provinceName?.takeIf { it.isNotBlank() },
+        cityName?.takeIf { it.isNotBlank() },
+        adName?.takeIf { it.isNotBlank() }
+    ).joinToString("")
+    return PlaceResult(
+        name = title?.takeIf { it.isNotBlank() } ?: "地点",
+        address = address.ifBlank { "%.5f, %.5f".format(point.latitude, point.longitude) },
+        latitude = point.latitude,
+        longitude = point.longitude
+    )
 }

@@ -12,6 +12,30 @@ plugins {
     alias(libs.plugins.room)
 }
 
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties().apply {
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+// AMap Android keys: add `amap.api.key.debug` / `amap.api.key.release` to
+// local.properties (or pass -PAMAP_API_KEY_DEBUG / -PAMAP_API_KEY_RELEASE).
+// A legacy `amap.api.key` is used as the fallback for both variants.
+val legacyAmapKey = localProperties.getProperty("amap.api.key")
+    ?: providers.gradleProperty("AMAP_API_KEY").orNull
+    ?: ""
+val amapReleaseKey = localProperties.getProperty("amap.api.key.release")
+    ?: providers.gradleProperty("AMAP_API_KEY_RELEASE").orNull
+    ?: legacyAmapKey
+val useReleaseSigningForDebug = localProperties
+    .getProperty("amap.debug.useReleaseSigning")
+    ?.toBoolean() ?: false
+val amapDebugKey = localProperties.getProperty("amap.api.key.debug")
+    ?: providers.gradleProperty("AMAP_API_KEY_DEBUG").orNull
+    ?: if (useReleaseSigningForDebug) amapReleaseKey else legacyAmapKey
+fun amapBuildConfigString(value: String): String =
+    "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
@@ -29,8 +53,9 @@ android {
         applicationId = "com.lunary.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 30
-        versionName = "0.9.6"
+        versionCode = 31
+        versionName = "0.9.7"
+        manifestPlaceholders["amapApiKey"] = amapReleaseKey
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,7 +72,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["amapApiKey"] = amapDebugKey
+            buildConfigField("String", "AMAP_API_KEY", amapBuildConfigString(amapDebugKey))
+            if (useReleaseSigningForDebug && keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
         release {
+            manifestPlaceholders["amapApiKey"] = amapReleaseKey
+            buildConfigField("String", "AMAP_API_KEY", amapBuildConfigString(amapReleaseKey))
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -61,6 +95,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     lint {
@@ -97,7 +132,8 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.biometric)
-    implementation(libs.osmdroid.android)
+    implementation(libs.androidx.exifinterface)
+    implementation(files("libs/amap/AMap3DMap_11.3.100_AMapSearch_9.8.1_AMapLocation_11.3.101_20260924.jar"))
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

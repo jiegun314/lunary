@@ -82,7 +82,6 @@ import com.lunary.app.ui.formatDate
 import com.lunary.app.ui.weekdayLong
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import android.text.format.DateFormat
@@ -1039,8 +1038,7 @@ private fun AttachmentGalleryCard(
 private fun ImageThumbnail(file: File) {
     val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, file.path) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val options = BitmapFactory.Options().apply { inSampleSize = 4 }
-            BitmapFactory.decodeFile(file.path, options)?.asImageBitmap()
+            decodeOrientedBitmap(file, inSampleSize = 4)?.asImageBitmap()
         }
     }
     bitmap?.let {
