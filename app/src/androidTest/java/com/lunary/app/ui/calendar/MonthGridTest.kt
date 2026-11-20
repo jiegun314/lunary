@@ -54,6 +54,6 @@ class MonthGridTest {
                 )
             }
         }
-        compose.onNodeWithContentDescription("2026年11月13日，有芳札").assertExists()
+        compose.onNodeWithContentDescription("2026年11月13日，有书信").assertExists()
     }
 }

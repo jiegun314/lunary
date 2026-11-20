@@ -119,7 +119,7 @@ fun BackupScreen(
             }
             SectionCard("本地加密备份") {
                 Text(
-                    "导出经过密码加密的 .lunary 文件（包含事项、分类、标签、提醒、芳札和附件）。密码不会保存在本机，丢失后无法恢复。",
+                    "导出经过密码加密的 .lunary 文件（包含事项、分类、标签、提醒、书信和附件）。密码不会保存在本机，丢失后无法恢复。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -310,9 +310,9 @@ private fun RestorePreviewDialog(
                 Text("备份时间：$time")
                 Text("应用版本：${archive.manifest.appVersion}")
                 Text("事项 ${archive.eventCount} · 分类 ${archive.categoryCount} · 标签 ${archive.tagCount}")
-                Text("提醒 ${archive.reminderCount} · 芳札 ${archive.letterCount} · 附件 ${archive.attachmentCount}")
+                Text("提醒 ${archive.reminderCount} · 书信 ${archive.letterCount} · 附件 ${archive.attachmentCount}")
                 Text(
-                    "合并恢复会保留本机数据；同名分类、标签会直接并入本机现有项（保留本机颜色和图标，回收站中的同名项不复用），纪念日与芳札保留原名称。替换会清空本机当前数据。两种方式都会先自动保存当前快照。",
+                    "合并恢复会保留本机数据；同名分类、标签会直接并入本机现有项（保留本机颜色和图标，回收站中的同名项不复用），纪念日与书信保留原名称。替换会清空本机当前数据。两种方式都会先自动保存当前快照。",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

@@ -7,13 +7,13 @@
     <string name="today">今天</string>
     <string name="calendar_title">日历</string>
     <string name="events_title">纪念日</string>
-    <string name="letters_title">芳札</string>
+    <string name="letters_title">书信</string>
     <string name="settings_title">设置</string>
 
     <string name="add">添加</string>
     <string name="add_event">添加纪念日</string>
     <string name="add_event_hint">记录日期、提醒和附件</string>
-    <string name="add_letter">写芳札</string>
+    <string name="add_letter">写书信</string>
     <string name="add_letter_hint">记录日期、时间与正文</string>
     <string name="add_to_date">添加到 %1$s</string>
     <string name="save">保存</string>
@@ -39,8 +39,8 @@
     <string name="next_day">后一天</string>
     <string name="selected_date_title">%1$d月%2$d日 · %3$s</string>
     <string name="event_count">共 %1$d 个纪念日</string>
-    <string name="letter_count">共 %1$d 封芳札</string>
-    <string name="event_and_letter_count">共 %1$d 个纪念日 · %2$d 封芳札</string>
+    <string name="letter_count">共 %1$d 封书信</string>
+    <string name="event_and_letter_count">共 %1$d 个纪念日 · %2$d 封书信</string>
     <string name="no_event_count">这一天暂无纪念日</string>
     <string name="no_entry_count">这一天暂无记录</string>
     <string name="empty_day_title">这一天还没有记录</string>
@@ -155,14 +155,14 @@
     <string name="no_matching_events">没有符合筛选条件的纪念日</string>
     <string name="clear_filters">清除筛选</string>
     <string name="trash_empty">回收站是空的</string>
-    <string name="trash_hint">删除的纪念日和芳札会保留 30 天，之后自动清理</string>
+    <string name="trash_hint">删除的纪念日和书信会保留 30 天，之后自动清理</string>
     <string name="trash_remaining">%1$d 天后自动清理</string>
     <string name="trash_events_section">纪念日</string>
-    <string name="trash_letters_section">芳札</string>
+    <string name="trash_letters_section">书信</string>
     <string name="restore">恢复</string>
     <string name="delete_forever">彻底删除</string>
     <string name="empty_trash">清空回收站</string>
-    <string name="empty_trash_confirm">清空后所有纪念日和芳札将被永久删除，无法恢复。确定继续吗？</string>
+    <string name="empty_trash_confirm">清空后所有纪念日和书信将被永久删除，无法恢复。确定继续吗？</string>
     <string name="manage_categories">分类管理</string>
     <string name="manage_tags">标签管理</string>
     <string name="settings_about">关于</string>
@@ -184,7 +184,7 @@
 
     <string name="nav_calendar">日历</string>
     <string name="nav_events">纪念日</string>
-    <string name="nav_letters">芳札</string>
+    <string name="nav_letters">书信</string>
     <string name="nav_settings">设置</string>
 
     <string name="settings_privacy">隐私与安全</string>
@@ -216,8 +216,8 @@
     <string name="lock_biometric_subtitle">使用生物识别或设备凭据</string>
     <string name="reminder_generic_title">月念提醒</string>
     <string name="day_cell_description">%1$d年%2$d月%3$d日，%4$d 个纪念日</string>
-    <string name="day_cell_description_letter">%1$d年%2$d月%3$d日，有芳札</string>
-    <string name="day_cell_description_event_letter">%1$d年%2$d月%3$d日，%4$d 个纪念日，有芳札</string>
+    <string name="day_cell_description_letter">%1$d年%2$d月%3$d日，有书信</string>
+    <string name="day_cell_description_event_letter">%1$d年%2$d月%3$d日，%4$d 个纪念日，有书信</string>
     <string name="auto_backup_title">自动备份</string>
     <string name="auto_backup_desc">按计划把加密备份写入你选择的文件夹，附件会随备份完整保存。</string>
     <string name="auto_backup_enable">启用自动备份</string>
@@ -260,7 +260,7 @@
     <string name="settings_backup_restore">备份与恢复</string>
     <string name="settings_backup_restore_desc">导出或恢复本机加密备份</string>
     <string name="settings_auto_backup_desc">定时加密备份，保留最近 14 份</string>
-    <string name="settings_trash_desc">已删除的纪念日和芳札保留 30 天</string>
+    <string name="settings_trash_desc">已删除的纪念日和书信保留 30 天</string>
     <string name="settings_categories_desc">管理分类名称与颜色</string>
     <string name="settings_tags_desc">管理标签名称、图标与颜色</string>
     <string name="settings_exact_alarm">精确提醒</string>
@@ -276,7 +276,7 @@
     <string name="settings_privacy_policy">隐私说明</string>
     <string name="settings_privacy_desc">查看数据存储与加密方式</string>
     <string name="settings_copyright">© 2026 Lunary</string>
-    <string name="settings_help_content">在日历页点击右下角 +，选择添加纪念日或芳札；纪念日可设置分类、提醒、地点和附件。备份与恢复位于设置 → 数据与备份；开启应用锁后，需 PIN 或生物识别才能查看内容。</string>
+    <string name="settings_help_content">在日历页点击右下角 +，选择添加纪念日或书信；纪念日可设置分类、提醒、地点和附件。备份与恢复位于设置 → 数据与备份；开启应用锁后，需 PIN 或生物识别才能查看内容。</string>
     <string name="settings_privacy_content">纪念日、附件和设置默认只保存在本机，不上传服务器。备份使用密码加密；应用锁 PIN 不以明文保存；应用不包含统计或广告 SDK。</string>
     <string name="auto_backup_plan">备份计划</string>
     <string name="detail_title">纪念日详情</string>
@@ -292,6 +292,10 @@
     <string name="editor_hint_yearly">在每年同一日期重复显示</string>
     <string name="editor_choose_on_map">在地图上选择</string>
     <string name="editor_located">已定位</string>
+    <string name="editor_add_location">添加地点</string>
+    <string name="editor_primary_location">主地点</string>
+    <string name="editor_remove_location">删除地点</string>
+    <string name="editor_location_limit">最多添加 10 个地点</string>
     <string name="editor_discard_title">放弃修改？</string>
     <string name="editor_discard_message">放弃未保存的修改？</string>
     <string name="editor_remove_attachment">移除附件</string>
@@ -301,7 +305,7 @@
     <string name="detail_no_location">暂无地点</string>
 
     <string name="search_letters">搜索标题、正文、发件人或收件人</string>
-    <string name="letters_no_results">没有找到符合条件的芳札</string>
+    <string name="letters_no_results">没有找到符合条件的书信</string>
     <string name="letters_no_results_hint">试试更换关键词或调整筛选条件</string>
     <string name="filter_time">时间</string>
     <string name="filter_all_time">全部时间</string>
@@ -315,11 +319,11 @@
     <string name="filter_any_date">不限</string>
     <string name="filter_keyword">关键词</string>
     <string name="filter_clear_date">清除日期</string>
-    <string name="letters_empty_title">还没有芳札</string>
+    <string name="letters_empty_title">还没有书信</string>
     <string name="letters_empty_hint">点击右下角的加号，写下第一封信</string>
-    <string name="letter_title_new">新建芳札</string>
-    <string name="letter_title_edit">编辑芳札</string>
-    <string name="letter_detail_title">芳札详情</string>
+    <string name="letter_title_new">新建书信</string>
+    <string name="letter_title_edit">编辑书信</string>
+    <string name="letter_detail_title">书信详情</string>
     <string name="letter_section_datetime">日期与时间</string>
     <string name="letter_date">日期</string>
     <string name="letter_time">时间</string>
@@ -332,7 +336,7 @@
     <string name="letter_subject_hint">给这封信一个标题</string>
     <string name="letter_content_hint">写下想说的话…</string>
     <string name="letter_field_required">%1$s不能为空</string>
-    <string name="letter_delete_title">删除芳札？</string>
+    <string name="letter_delete_title">删除书信？</string>
     <string name="letter_delete_message">「%1$s」将被移入回收站，30 天后自动清理。</string>
     <string name="letter_from_to">%1$s → %2$s</string>
     <string name="letter_content_count">%1$d/%2$d</string>

@@ -27,7 +27,8 @@ object DatabaseModule {
             .addMigrations(
                 LunaryDatabase.MIGRATION_1_2,
                 LunaryDatabase.MIGRATION_2_3,
-                LunaryDatabase.MIGRATION_3_4
+                LunaryDatabase.MIGRATION_3_4,
+                LunaryDatabase.MIGRATION_4_5
             )
             .addCallback(object : androidx.room.RoomDatabase.Callback() {
                 override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {

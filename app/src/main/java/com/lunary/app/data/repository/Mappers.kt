@@ -7,6 +7,7 @@ import com.lunary.app.data.local.entity.EventWithTags
 import com.lunary.app.data.local.entity.LetterEntity
 import com.lunary.app.data.local.entity.ReminderEntity
 import com.lunary.app.data.local.entity.TagEntity
+import com.lunary.app.data.local.EventLocationJson
 import com.lunary.app.domain.model.Attachment
 import com.lunary.app.domain.model.Category
 import com.lunary.app.domain.model.DateMode
@@ -23,6 +24,9 @@ fun EventWithTags.toDomain(): Event {
     val storedEmoji = event.emoji?.takeIf { it.isNotBlank() }
     val legacyEmoji = if (storedEmoji == null) EmojiCatalog.leading(event.title) else null
     val title = legacyEmoji?.let { event.title.removePrefix(it).trimStart() } ?: event.title
+    val locations = EventLocationJson.decode(event.locationsJson)
+        .ifEmpty { EventLocationJson.fromLegacy(event.location, event.latitude, event.longitude) }
+    val primaryLocation = locations.firstOrNull()
     return Event(
         id = event.id,
         title = title,
@@ -34,9 +38,10 @@ fun EventWithTags.toDomain(): Event {
         categoryId = event.categoryId,
         colorArgb = event.colorArgb,
         note = event.note.orEmpty(),
-        location = event.location.orEmpty(),
-        latitude = event.latitude,
-        longitude = event.longitude,
+        location = primaryLocation?.label ?: event.location.orEmpty(),
+        latitude = primaryLocation?.latitude ?: event.latitude,
+        longitude = primaryLocation?.longitude ?: event.longitude,
+        locations = locations,
         tags = tags.map { it.toDomain() },
         createdAt = Instant.ofEpochMilli(event.createdAt),
         updatedAt = Instant.ofEpochMilli(event.updatedAt),
@@ -44,23 +49,29 @@ fun EventWithTags.toDomain(): Event {
     )
 }
 
-fun Event.toEntity(): EventEntity = EventEntity(
-    id = id,
-    title = title,
-    emoji = emoji,
-    dateEpochDay = date.toEpochDay(),
-    dateMode = dateMode.name,
-    recurrenceRule = recurrence.name,
-    categoryId = categoryId,
-    colorArgb = colorArgb,
-    note = note.ifBlank { null },
-    location = location.ifBlank { null },
-    latitude = latitude,
-    longitude = longitude,
-    createdAt = createdAt.toEpochMilli(),
-    updatedAt = updatedAt.toEpochMilli(),
-    deletedAt = deletedAt?.toEpochMilli()
-)
+fun Event.toEntity(): EventEntity {
+    val normalizedLocations = EventLocationJson.normalize(locations)
+        .ifEmpty { EventLocationJson.fromLegacy(location, latitude, longitude) }
+    val primaryLocation = normalizedLocations.firstOrNull()
+    return EventEntity(
+        id = id,
+        title = title,
+        emoji = emoji,
+        dateEpochDay = date.toEpochDay(),
+        dateMode = dateMode.name,
+        recurrenceRule = recurrence.name,
+        categoryId = categoryId,
+        colorArgb = colorArgb,
+        note = note.ifBlank { null },
+        location = (primaryLocation?.label ?: location).ifBlank { null },
+        latitude = primaryLocation?.latitude ?: latitude,
+        longitude = primaryLocation?.longitude ?: longitude,
+        createdAt = createdAt.toEpochMilli(),
+        updatedAt = updatedAt.toEpochMilli(),
+        deletedAt = deletedAt?.toEpochMilli(),
+        locationsJson = EventLocationJson.encode(normalizedLocations)
+    )
+}
 
 fun CategoryEntity.toDomain(): Category = Category(
     id = id,

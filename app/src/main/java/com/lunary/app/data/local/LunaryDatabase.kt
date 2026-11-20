@@ -33,7 +33,7 @@ import com.lunary.app.domain.model.EmojiCatalog
         SyncOperationEntity::class,
         LetterEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class LunaryDatabase : RoomDatabase() {
@@ -53,6 +53,12 @@ abstract class LunaryDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE events ADD COLUMN latitude REAL")
                 db.execSQL("ALTER TABLE events ADD COLUMN longitude REAL")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE events ADD COLUMN locationsJson TEXT")
             }
         }
 

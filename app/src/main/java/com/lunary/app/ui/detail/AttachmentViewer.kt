@@ -174,16 +174,25 @@ internal fun AttachmentViewerDialog(
                         tint = Color.White
                     )
                 }
-                Text(
-                    text = current.displayName,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 8.dp)
-                )
+                ) {
+                    Text(
+                        text = current.displayName,
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = formatBytes(current.sizeBytes),
+                        color = Color.White.copy(alpha = 0.72f),
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1
+                    )
+                }
                 Text(
                     text = stringResource(
                         R.string.attachment_viewer_position,

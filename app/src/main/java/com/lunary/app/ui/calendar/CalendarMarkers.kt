@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.lunary.app.ui.components.LetterAccent
 
 /**
- * 日期两侧的标记：左侧为芳札细竖线，右侧为纪念日圆点。
+ * 日期两侧的标记：左侧为书信细竖线，右侧为纪念日圆点。
  * 两侧占位固定，保证中间日期文字始终水平居中。
  */
 @Composable

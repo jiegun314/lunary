@@ -3,6 +3,7 @@ package com.lunary.app.data.backup
 import com.lunary.app.data.local.entity.AttachmentEntity
 import com.lunary.app.data.local.entity.CategoryEntity
 import com.lunary.app.domain.model.EmojiCatalog
+import com.lunary.app.data.local.EventLocationJson
 import com.lunary.app.data.local.entity.EventEntity
 import com.lunary.app.data.local.entity.EventTagCrossRef
 import com.lunary.app.data.local.entity.LetterEntity
@@ -125,6 +126,9 @@ object BackupJson {
         put("categoryId", categoryId); put("colorArgb", colorArgb)
         put("note", note); put("location", location)
         put("latitude", latitude); put("longitude", longitude)
+        val locations = EventLocationJson.decode(locationsJson)
+            .ifEmpty { EventLocationJson.fromLegacy(location, latitude, longitude) }
+        put("locations", EventLocationJson.toJsonArray(locations))
         put("createdAt", createdAt); put("updatedAt", updatedAt)
         put("deletedAt", deletedAt); put("revision", revision)
     }
@@ -143,7 +147,10 @@ object BackupJson {
             note = optStringOrNull("note"), location = optStringOrNull("location"),
             latitude = optDoubleOrNull("latitude"), longitude = optDoubleOrNull("longitude"),
             createdAt = getLong("createdAt"), updatedAt = getLong("updatedAt"),
-            deletedAt = optLongOrNull("deletedAt"), revision = optLong("revision", 1)
+            deletedAt = optLongOrNull("deletedAt"), revision = optLong("revision", 1),
+            locationsJson = optJSONArray("locations")?.let { array ->
+                EventLocationJson.encode(EventLocationJson.fromJsonArray(array))
+            }
         )
     }
 

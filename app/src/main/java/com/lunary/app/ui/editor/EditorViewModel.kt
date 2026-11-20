@@ -11,6 +11,7 @@ import com.lunary.app.domain.model.Attachment
 import com.lunary.app.domain.model.Category
 import com.lunary.app.domain.model.DateMode
 import com.lunary.app.domain.model.Event
+import com.lunary.app.domain.model.EventLocation
 import com.lunary.app.domain.model.PickedLocation
 import com.lunary.app.domain.model.Recurrence
 import com.lunary.app.domain.model.Tag
@@ -45,9 +46,7 @@ data class EditorForm(
     val categoryId: String? = null,
     val colorArgb: Int = 0xFF7E57C2.toInt(),
     val note: String = "",
-    val location: String = "",
-    val latitude: Double? = null,
-    val longitude: Double? = null,
+    val locations: List<EventLocation> = emptyList(),
     val selectedTagIds: Set<String> = emptySet()
 )
 
@@ -170,16 +169,45 @@ class EditorViewModel @Inject constructor(
         _form.value = _form.value.copy(note = value)
     }
 
-    fun setLocation(value: String) {
-        _form.value = _form.value.copy(location = value, latitude = null, longitude = null)
+    fun addLocation() {
+        val current = _form.value.locations
+        if (current.size >= MAX_EDITOR_LOCATIONS) return
+        _form.value = _form.value.copy(locations = current + EventLocation(name = ""))
     }
 
-    fun setPickedLocation(picked: PickedLocation) {
+    fun removeLocation(index: Int) {
+        val current = _form.value.locations
+        if (index !in current.indices) return
+        _form.value = _form.value.copy(locations = current.filterIndexed { i, _ -> i != index })
+    }
+
+    fun setLocationName(index: Int, value: String) {
+        val current = _form.value.locations
+        if (index !in current.indices) return
+        _form.value = _form.value.copy(
+            locations = current.mapIndexed { i, location ->
+                if (i == index) location.copy(name = value) else location
+            }
+        )
+    }
+
+    fun setPickedLocation(index: Int, picked: PickedLocation) {
+        val current = _form.value.locations
+        if (index !in current.indices) return
         val label = picked.name.ifBlank { picked.address }
         _form.value = _form.value.copy(
-            location = label,
-            latitude = picked.latitude,
-            longitude = picked.longitude
+            locations = current.mapIndexed { i, location ->
+                if (i == index) {
+                    location.copy(
+                        name = label,
+                        address = picked.address,
+                        latitude = picked.latitude,
+                        longitude = picked.longitude
+                    )
+                } else {
+                    location
+                }
+            }
         )
     }
 
@@ -229,6 +257,11 @@ class EditorViewModel @Inject constructor(
             try {
             val existing = eventId?.let { eventRepository.observeEvent(it).first() }
             val id = eventId ?: UUID.randomUUID().toString()
+            val locations = form.locations
+                .map { it.copy(name = it.name.trim(), address = it.address.trim()) }
+                .filter { it.name.isNotBlank() || it.address.isNotBlank() }
+                .take(MAX_EDITOR_LOCATIONS)
+            val primaryLocation = locations.firstOrNull()
             val event = Event(
                 id = id,
                 title = form.title.trim(),
@@ -239,9 +272,10 @@ class EditorViewModel @Inject constructor(
                 categoryId = form.categoryId,
                 colorArgb = form.colorArgb,
                 note = form.note.trim(),
-                location = form.location.trim(),
-                latitude = form.latitude,
-                longitude = form.longitude,
+                location = primaryLocation?.label.orEmpty(),
+                latitude = primaryLocation?.latitude,
+                longitude = primaryLocation?.longitude,
+                locations = locations,
                 tags = emptyList(),
                 createdAt = existing?.createdAt ?: Instant.EPOCH,
                 updatedAt = Instant.EPOCH
@@ -277,6 +311,7 @@ class EditorViewModel @Inject constructor(
 
     private companion object {
         const val MAX_EDITOR_ATTACHMENTS = 20
+        const val MAX_EDITOR_LOCATIONS = 10
     }
 
     private fun Event.toForm(): EditorForm = EditorForm(
@@ -288,9 +323,12 @@ class EditorViewModel @Inject constructor(
         categoryId = categoryId,
         colorArgb = colorArgb,
         note = note,
-        location = location,
-        latitude = latitude,
-        longitude = longitude,
+        locations = locations.ifEmpty {
+            EventLocation(location, "", latitude, longitude)
+                .takeIf { location.isNotBlank() || latitude != null || longitude != null }
+                ?.let(::listOf)
+                .orEmpty()
+        },
         selectedTagIds = tagIds
     )
 }

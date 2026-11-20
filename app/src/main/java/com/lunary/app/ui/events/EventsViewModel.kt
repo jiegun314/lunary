@@ -81,7 +81,11 @@ class EventsViewModel @Inject constructor(
                 normalized.isEmpty() ||
                     event.title.contains(normalized, ignoreCase = true) ||
                     event.note.contains(normalized, ignoreCase = true) ||
-                    event.location.contains(normalized, ignoreCase = true)
+                    event.location.contains(normalized, ignoreCase = true) ||
+                    event.locations.any { location ->
+                        location.name.contains(normalized, ignoreCase = true) ||
+                            location.address.contains(normalized, ignoreCase = true)
+                    }
             }
             .filter { event -> matchesQuickFilter(event, today, policy, currentFilter.quick) }
             .filter { event ->
@@ -95,8 +99,8 @@ class EventsViewModel @Inject constructor(
             .filter { event ->
                 when (currentFilter.location) {
                     LocationFilter.ANY -> true
-                    LocationFilter.HAS -> event.location.isNotBlank()
-                    LocationFilter.NONE -> event.location.isBlank()
+                    LocationFilter.HAS -> event.location.isNotBlank() || event.locations.isNotEmpty()
+                    LocationFilter.NONE -> event.location.isBlank() && event.locations.isEmpty()
                 }
             }
             .sortedWith(eventComparator(today, policy))

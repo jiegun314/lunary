@@ -10,7 +10,7 @@ import com.lunary.app.data.local.entity.TagEntity
 import java.io.File
 import java.util.zip.ZipFile
 
-const val BACKUP_SCHEMA_VERSION = 3
+const val BACKUP_SCHEMA_VERSION = 4
 const val BACKUP_MAGIC = "LUNARYBK1"
 
 data class BackupManifest(

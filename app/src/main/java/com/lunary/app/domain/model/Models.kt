@@ -38,6 +38,7 @@ data class Event(
     val location: String = "",
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val locations: List<EventLocation> = emptyList(),
     val tags: List<Tag> = emptyList(),
     val createdAt: Instant = Instant.EPOCH,
     val updatedAt: Instant = Instant.EPOCH,
@@ -59,6 +60,15 @@ data class Letter(
     val deletedAt: Instant? = null
 ) {
     val time: LocalTime get() = LocalTime.of(timeMinutes / 60, timeMinutes % 60)
+}
+
+data class EventLocation(
+    val name: String,
+    val address: String = "",
+    val latitude: Double? = null,
+    val longitude: Double? = null
+) {
+    val label: String get() = name.ifBlank { address }
 }
 
 data class PickedLocation(

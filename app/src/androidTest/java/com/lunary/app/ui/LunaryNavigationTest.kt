@@ -39,9 +39,9 @@ class LunaryNavigationTest {
 
     @Test
     fun lettersTab_opensLetterEditor() {
-        compose.onNode(hasText("芳札") and hasClickAction()).performClick()
-        compose.onNodeWithContentDescription("写芳札").assertExists()
-        compose.onNodeWithContentDescription("写芳札").performClick()
-        compose.onNodeWithText("新建芳札").assertExists()
+        compose.onNode(hasText("书信") and hasClickAction()).performClick()
+        compose.onNodeWithContentDescription("写书信").assertExists()
+        compose.onNodeWithContentDescription("写书信").performClick()
+        compose.onNodeWithText("新建书信").assertExists()
     }
 }

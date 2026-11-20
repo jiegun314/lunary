@@ -405,28 +405,56 @@ fun DetailScreen(
                             }
 
                             DetailSubsection(R.string.field_location) {
-                                if (event.location.isBlank()) {
+                                if (event.locations.isEmpty()) {
                                     DetailEmptyText(R.string.detail_no_location)
                                 } else {
                                     Column(
-                                        Modifier.fillMaxWidth().padding(16.dp)
+                                        Modifier.fillMaxWidth().padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        Text(
-                                            text = event.location,
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        val lat = event.latitude
-                                        val lon = event.longitude
-                                        if (lat != null && lon != null) {
-                                            Spacer(Modifier.height(12.dp))
-                                            com.lunary.app.ui.location.LocationMapPreview(
-                                                latitude = lat,
-                                                longitude = lon,
-                                                title = event.location,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(160.dp)
-                                            )
+                                        event.locations.forEachIndexed { index, location ->
+                                            Column(Modifier.fillMaxWidth()) {
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = location.label.ifBlank {
+                                                            stringResource(R.string.field_location)
+                                                        },
+                                                        style = MaterialTheme.typography.bodyLarge
+                                                    )
+                                                    if (index == 0) {
+                                                        Text(
+                                                            text = stringResource(R.string.editor_primary_location),
+                                                            style = MaterialTheme.typography.labelMedium,
+                                                            color = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+                                                }
+                                                if (location.address.isNotBlank() &&
+                                                    location.address != location.label
+                                                ) {
+                                                    Text(
+                                                        text = location.address,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                val lat = location.latitude
+                                                val lon = location.longitude
+                                                if (lat != null && lon != null) {
+                                                    Spacer(Modifier.height(12.dp))
+                                                    com.lunary.app.ui.location.LocationMapPreview(
+                                                        latitude = lat,
+                                                        longitude = lon,
+                                                        title = location.label,
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .height(160.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1010,26 +1038,6 @@ private fun AttachmentGalleryCard(
                     )
                 }
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = attachment.displayName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = formatBytes(attachment.sizeBytes),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
         }
     }
 }
@@ -1049,12 +1057,6 @@ private fun ImageThumbnail(file: File) {
             modifier = Modifier.fillMaxSize()
         )
     }
-}
-
-private fun formatBytes(bytes: Long): String = when {
-    bytes >= 1024 * 1024 -> String.format("%.1f MB", bytes / 1024.0 / 1024.0)
-    bytes >= 1024 -> String.format("%.0f KB", bytes / 1024.0)
-    else -> "$bytes B"
 }
 
 

@@ -48,7 +48,8 @@ data class EventEntity(
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long? = null,
-    val revision: Long = 1
+    val revision: Long = 1,
+    val locationsJson: String? = null
 )
 
 data class EventWithTags(

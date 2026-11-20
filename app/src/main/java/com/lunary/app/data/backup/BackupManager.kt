@@ -119,7 +119,7 @@ class BackupManager @Inject constructor(
             require(data.categories.size == manifest.categoryCount) { "分类数量不一致" }
             require(data.tags.size == manifest.tagCount) { "标签数量不一致" }
             require(data.reminders.size == manifest.reminderCount) { "提醒数量不一致" }
-            require(data.letters.size == manifest.letterCount) { "芳札数量不一致" }
+            require(data.letters.size == manifest.letterCount) { "书信数量不一致" }
             var total = 0L
             manifest.files.forEach { file ->
                 require(!file.path.contains("..")) { "备份包含非法路径" }

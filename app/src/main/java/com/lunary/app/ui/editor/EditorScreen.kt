@@ -125,7 +125,7 @@ fun EditorScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var showLocationPicker by remember { mutableStateOf(false) }
+    var editingLocationIndex by remember { mutableStateOf<Int?>(null) }
     var showEmojiPicker by remember { mutableStateOf(false) }
     val selectedEmoji = form.emoji
     val emojiAction = stringResource(
@@ -395,15 +395,73 @@ fun EditorScreen(
                         modifier = Modifier.padding(start = 16.dp, top = 12.dp),
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
-                    OutlinedTextField(
-                        value = form.location,
-                        onValueChange = viewModel::setLocation,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, top = 12.dp),
-                        label = { Text(stringResource(R.string.field_location)) },
-                        singleLine = true
-                    )
+                    form.locations.forEachIndexed { index, location ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, top = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = location.name,
+                                    onValueChange = { viewModel.setLocationName(index, it) },
+                                    modifier = Modifier.weight(1f),
+                                    label = {
+                                        Text(
+                                            stringResource(
+                                                if (index == 0) R.string.editor_primary_location
+                                                else R.string.field_location
+                                            )
+                                        )
+                                    },
+                                    singleLine = true
+                                )
+                                IconButton(
+                                    onClick = { viewModel.removeLocation(index) }
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Delete,
+                                        contentDescription = stringResource(R.string.editor_remove_location)
+                                    )
+                                }
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(onClick = { editingLocationIndex = index }) {
+                                    Text(stringResource(R.string.editor_choose_on_map))
+                                }
+                                if (location.latitude != null && location.longitude != null) {
+                                    Text(
+                                        text = stringResource(R.string.editor_located),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            val previewLat = location.latitude
+                            val previewLon = location.longitude
+                            if (previewLat != null && previewLon != null) {
+                                LocationMapPreview(
+                                    latitude = previewLat,
+                                    longitude = previewLon,
+                                    title = location.label.ifBlank { stringResource(R.string.field_location) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                        .height(160.dp)
+                                )
+                            }
+                        }
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -411,30 +469,19 @@ fun EditorScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        OutlinedButton(onClick = { showLocationPicker = true }) {
-                            Text(stringResource(R.string.editor_choose_on_map))
-                        }
-                        if (form.latitude != null && form.longitude != null) {
-                            Text(
-                                text = stringResource(R.string.editor_located),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                    val previewLat = form.latitude
-                    val previewLon = form.longitude
-                    if (previewLat != null && previewLon != null) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                        OutlinedButton(
+                            onClick = viewModel::addLocation,
+                            enabled = form.locations.size < 10
                         ) {
-                            LocationMapPreview(
-                                latitude = previewLat,
-                                longitude = previewLon,
-                                title = form.location,
-                                modifier = Modifier.fillMaxWidth().height(160.dp)
+                            Icon(Icons.Filled.Add, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.editor_add_location))
+                        }
+                        if (form.locations.size >= 10) {
+                            Text(
+                                text = stringResource(R.string.editor_location_limit),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -560,22 +607,24 @@ fun EditorScreen(
         }
     }
 
-    if (showLocationPicker) {
+    val pickerIndex = editingLocationIndex
+    if (pickerIndex != null) {
+        val location = form.locations.getOrNull(pickerIndex)
         LocationPickerDialog(
-            initial = form.latitude?.let { lat ->
-                form.longitude?.let { lon ->
+            initial = location?.latitude?.let { lat ->
+                location.longitude?.let { lon ->
                     PickedLocation(
-                        name = form.location,
-                        address = form.location,
+                        name = location.label.ifBlank { location.address },
+                        address = location.address,
                         latitude = lat,
                         longitude = lon
                     )
                 }
             },
-            onDismiss = { showLocationPicker = false },
+            onDismiss = { editingLocationIndex = null },
             onConfirm = { picked ->
-                viewModel.setPickedLocation(picked)
-                showLocationPicker = false
+                viewModel.setPickedLocation(pickerIndex, picked)
+                editingLocationIndex = null
             }
         )
     }
